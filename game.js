@@ -212,6 +212,7 @@
     libraryTab: 'chars',
     librarySel: null,
     noteSel: null,
+    posterCanvas: null,
     mode: progress.mode,
     levelIndex: 0,
     grid: null,
@@ -265,7 +266,11 @@
     libraryCells: null,
     verseCells: null,
     noteCells: null,
-    noteClose: null
+    noteClose: null,
+    poster: null,
+    posterSave: null,
+    posterClose: null,
+    posterImage: null
   };
 
   function levelConfig() {
@@ -410,6 +415,7 @@
     state.pops = [];
     state.comboText = null;
     state.toast = null;
+    state.posterCanvas = null;
     state.hint = null;
     state.idleTime = 0;
     state.cardT = 0;
@@ -472,6 +478,7 @@
     state.result = null;
     state.librarySel = null;
     state.noteSel = null;
+    state.posterCanvas = null;
     state.toast = null;
   }
 
@@ -1669,7 +1676,215 @@
       active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
   }
 
-  /* ---------------- 弹层：字卡 ---------------- */
+  /* ---------------- 字卡海报 ---------------- */
+
+  var POSTER_W = 1080, POSTER_H = 1440;
+  var posterOff = null;
+
+  function posterFont(p, size, weight) {
+    p.font = (weight ? weight + ' ' : '') + size +
+      'px "Noto Serif SC","Source Han Serif SC","Songti SC","STSong","Noto Serif CJK SC","SimSun",serif';
+  }
+
+  function posterText(p, str, x, y, size, color, align, baseline, weight) {
+    posterFont(p, size, weight);
+    p.fillStyle = color;
+    p.textAlign = align || 'left';
+    p.textBaseline = baseline || 'alphabetic';
+    p.fillText(str, x, y);
+  }
+
+  function posterWrap(p, str, maxW, size) {
+    posterFont(p, size);
+    var lines = [];
+    var cur = '';
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charAt(i);
+      var over = cur && p.measureText(cur + c).width > maxW;
+      if (over && NO_LINE_START.indexOf(c) < 0) {
+        lines.push(cur);
+        cur = c;
+      } else {
+        cur += c;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function posterRound(p, x, y, w, h, r) {
+    p.beginPath();
+    p.moveTo(x + r, y);
+    p.arcTo(x + w, y, x + w, y + h, r);
+    p.arcTo(x + w, y + h, x, y + h, r);
+    p.arcTo(x, y + h, x, y, r);
+    p.arcTo(x, y, x + w, y, r);
+    p.closePath();
+  }
+
+  function buildPoster() {
+    var lv = levelConfig();
+    var ch = Data.char(lv.char);
+    var pv = null;
+    try {
+      if (!posterOff) posterOff = isWx ? wx.createCanvas() : document.createElement('canvas');
+      pv = posterOff;
+    } catch (e) { pv = null; }
+    if (!pv) { showToast('当前环境不支持生成字卡'); return; }
+
+    pv.width = POSTER_W;
+    pv.height = POSTER_H;
+    var p = pv.getContext('2d');
+
+    var bg = p.createLinearGradient(0, 0, 0, POSTER_H);
+    bg.addColorStop(0, '#FBF4E6');
+    bg.addColorStop(0.6, '#F2E4CA');
+    bg.addColorStop(1, '#E2CDA6');
+    p.fillStyle = bg;
+    p.fillRect(0, 0, POSTER_W, POSTER_H);
+
+    p.strokeStyle = 'rgba(160,124,68,0.32)';
+    p.lineWidth = 2;
+    p.strokeRect(44, 44, POSTER_W - 88, POSTER_H - 88);
+
+    posterText(p, '甲 骨 消 消 乐', 540, 122, 38, '#B4914E', 'center', 'middle', 'bold');
+    posterText(p, '契于龟甲 · 消而成文', 540, 168, 20,
+      'rgba(58,45,30,0.42)', 'center', 'middle');
+    posterText(p, '契文已成 · ' + lv.title, 540, 218, 23,
+      '#B4914E', 'center', 'middle', 'bold');
+
+    p.beginPath();
+    p.arc(540, 420, 178, 0, Math.PI * 2);
+    p.fillStyle = 'rgba(252,246,232,0.92)';
+    p.fill();
+    p.strokeStyle = 'rgba(180,145,78,0.5)';
+    p.lineWidth = 2;
+    p.stroke();
+    p.beginPath();
+    p.arc(540, 420, 166, 0, Math.PI * 2);
+    p.strokeStyle = 'rgba(180,145,78,0.2)';
+    p.lineWidth = 1;
+    p.stroke();
+
+    Glyphs.drawById(p, ch.glyph, 540, 420, 280, 6, C.ink, true);
+
+    posterText(p, '甲 骨 文', 540, 634, 20, 'rgba(58,45,30,0.38)', 'center', 'middle');
+    posterText(p, ch.kai, 540, 716, 108, C.red, 'center', 'middle', 'bold');
+    posterText(p, ch.pinyin, 540 + 88, 712, 27, 'rgba(58,45,30,0.5)', 'left', 'middle');
+    posterText(p, ch.meaning, 540, 818, 40, C.ink, 'center', 'middle', 'bold');
+
+    var copy = state.mode === 'kid' ? ch.kid : ch.adult;
+    var lines = posterWrap(p, copy, 800, 25);
+    if (lines.length > 2) lines = lines.slice(0, 2);
+    for (var i = 0; i < lines.length; i++) {
+      posterText(p, lines[i], 540, 874 + i * 40, 25,
+        'rgba(58,45,30,0.72)', 'center', 'middle');
+    }
+
+    p.strokeStyle = 'rgba(150,120,80,0.24)';
+    p.lineWidth = 1;
+    p.beginPath();
+    p.moveTo(140, 958);
+    p.lineTo(POSTER_W - 140, 958);
+    p.stroke();
+
+    if (ch.bone) {
+      posterText(p, '「' + ch.bone + '」', 540, 1016, 38, C.red, 'center', 'middle', 'bold');
+      posterText(p, ch.gloss, 540, 1068, 25, 'rgba(58,45,30,0.55)', 'center', 'middle');
+    } else {
+      posterText(p, ch.gloss, 540, 1016, 28, 'rgba(58,45,30,0.55)', 'center', 'middle');
+    }
+
+    posterText(p, '第 ' + (state.levelIndex + 1) + ' 契 · ' + state.steps + ' 步 · ' +
+      state.score + ' 分 · 连击 ×' + (state.maxMult || 1),
+      540, 1128, 26, 'rgba(58,45,30,0.58)', 'center', 'middle');
+    posterText(p, '字卡入库 · 已识 ' + progress.learned.length + ' / ' +
+      Data.CHARS.length + ' 字',
+      540, 1174, 23, 'rgba(58,45,30,0.4)', 'center', 'middle');
+
+    p.save();
+    p.translate(938, 1278);
+    p.rotate(-0.05);
+    posterRound(p, -46, -46, 92, 92, 8);
+    p.fillStyle = C.red;
+    p.fill();
+    posterText(p, '契', 0, 2, 48, '#FBF3E2', 'center', 'middle', 'bold');
+    p.restore();
+
+    posterText(p, '甲骨消消乐 · 十契三十字', 540, 1356, 21,
+      'rgba(58,45,30,0.32)', 'center', 'middle');
+
+    if (isWx) {
+      try {
+        wx.canvasToTempFilePath({
+          canvas: pv,
+          success: function (res) {
+            if (wx.showShareImageMenu) {
+              wx.showShareImageMenu({ path: res.tempFilePath });
+            } else if (wx.saveImageToPhotosAlbum) {
+              wx.saveImageToPhotosAlbum({ filePath: res.tempFilePath });
+            }
+          },
+          fail: function () { showToast('字卡生成失败，再试一次'); }
+        });
+      } catch (e) {
+        showToast('字卡生成失败，再试一次');
+      }
+      return;
+    }
+
+    state.posterCanvas = pv;
+  }
+
+  function downloadPoster() {
+    if (!state.posterCanvas) return;
+    try {
+      var a = document.createElement('a');
+      a.href = state.posterCanvas.toDataURL('image/png');
+      a.download = '甲骨字卡-' + Data.char(levelConfig().char).kai + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      state.posterCanvas = null;
+      showToast('字卡已存到下载文件夹');
+    } catch (e) {
+      showToast('下载失败，请长按图片保存');
+    }
+  }
+
+  function drawPosterPreview() {
+    var pv = state.posterCanvas;
+    if (!pv) return;
+
+    ctx.fillStyle = 'rgba(28,20,12,0.7)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    var maxW = Math.min(viewW - 56, 340);
+    var maxH = viewH - 190;
+    var scale = Math.min(maxW / POSTER_W, maxH / POSTER_H);
+    var dw = POSTER_W * scale;
+    var dh = POSTER_H * scale;
+    var dx = (viewW - dw) / 2;
+    var dy = Math.max(safeTop + 14, (viewH - dh - 60) / 2);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(20,12,6,0.45)';
+    ctx.shadowBlur = 26;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#FBF4E6';
+    ctx.fillRect(dx, dy, dw, dh);
+    ctx.restore();
+    ctx.drawImage(pv, dx, dy, dw, dh);
+
+    text('长按字卡可保存 · 也可直接截图', viewW / 2, dy + dh + 19, 10.5,
+      'rgba(255,248,235,0.8)', 'center', 'middle');
+
+    ui.posterImage = { x: dx, y: dy, w: dw, h: dh };
+    ui.posterSave = { x: viewW / 2 - 100, y: dy + dh + 34, w: 92, h: 34 };
+    ui.posterClose = { x: viewW / 2 + 8, y: dy + dh + 34, w: 92, h: 34 };
+    drawButton(ui.posterSave, '下载', { size: 12.5 });
+    drawButton(ui.posterClose, '关闭', { ghost: true, size: 12.5 });
+  }
 
   function drawSpellCard() {
     var lv = levelConfig();
@@ -1756,13 +1971,17 @@
     }
 
     if (isWx) {
-      ui.primary = { x: cx - 100, y: y + h - 68, w: 116, h: 44 };
-      ui.share = { x: cx + 26, y: y + h - 68, w: 74, h: 44 };
-      drawButton(ui.primary, '收下此字', { size: 13.5 });
-      drawButton(ui.share, '分享挑战', { ghost: true, size: 11.5 });
+      ui.primary = { x: cx - 146, y: y + h - 68, w: 106, h: 44 };
+      ui.poster = { x: cx - 32, y: y + h - 68, w: 76, h: 44 };
+      ui.share = { x: cx + 52, y: y + h - 68, w: 86, h: 44 };
+      drawButton(ui.primary, '收下此字', { size: 13 });
+      drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
+      drawButton(ui.share, '分享挑战', { ghost: true, size: 10.5 });
     } else {
-      ui.primary = { x: cx - 92, y: y + h - 68, w: 184, h: 44 };
+      ui.primary = { x: cx - 128, y: y + h - 68, w: 128, h: 44 };
+      ui.poster = { x: cx + 8, y: y + h - 68, w: 120, h: 44 };
       drawButton(ui.primary, '收下此字', { size: 14.5 });
+      drawButton(ui.poster, '存字卡', { ghost: true, size: 12 });
     }
 
     text(state.mode === 'kid' ? '童蒙本' : '雅士本', x + 24, y + 26, 9, C.inkFaint, 'left', 'middle');
@@ -2222,6 +2441,7 @@
     ui.verseCells = null;
     ui.noteCells = null;
     ui.noteClose = null;
+    ui.poster = null;
 
     if (state.screen === 'start') drawStart();
     else if (state.screen === 'card') drawSpellCard();
@@ -2262,6 +2482,8 @@
       drawFooter();
     }
     drawOverlay();
+    if (state.screen === 'card' || state.screen === 'result') drawToast();
+    drawPosterPreview();
   }
 
   /* ---------------- 输入 ---------------- */
@@ -2326,12 +2548,20 @@
     var p = pointer;
     pointer = null;
 
+    if (state.posterCanvas) {
+      if (inRect(x, y, ui.posterSave)) { Sfx.play('tap'); downloadPoster(); return; }
+      if (inRect(x, y, ui.posterClose) || !inRect(x, y, ui.posterImage)) {
+        state.posterCanvas = null;
+      }
+      return;
+    }
+
     if (inRect(x, y, ui.sound)) { Sfx.toggle(); Sfx.play('tap'); return; }
 
     var onButton = inRect(x, y, ui.primary) || inRect(x, y, ui.secondary) ||
       inRect(x, y, ui.share) || inRect(x, y, ui.modeKid) || inRect(x, y, ui.modeAdult) ||
       inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
-      inRect(x, y, ui.library) || inRect(x, y, ui.close);
+      inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
@@ -2348,6 +2578,7 @@
 
     if (state.screen === 'card') {
       if (inRect(x, y, ui.share)) { shareChallenge(); return; }
+      if (inRect(x, y, ui.poster)) { buildPoster(); return; }
       if (inRect(x, y, ui.primary)) {
         if (challenge && challenge.done) challenge = null;
         advance();
