@@ -11,6 +11,10 @@
   try {
     Evo = isWx ? require('./js/evo-data.js') : window.OracleEvo;
   } catch (e) { Evo = null; }
+  var Gif = null;
+  try {
+    Gif = isWx ? require('./js/gif.js') : window.OracleGif;
+  } catch (e) { Gif = null; }
 
   var SIZE = Core.SIZE;
   var LEVEL_COUNT = Data.LEVELS.length;
@@ -283,6 +287,7 @@
     evoBtn: null,
     evo: null,
     evoReplay: null,
+    evoSave: null,
     evoClose: null,
     posterSave: null,
     posterClose: null,
@@ -1611,6 +1616,7 @@
     var w = Math.min(layout.contentW - 20, 280), h = 34;
     var x = viewW / 2 - w / 2;
     var y = layout.board.y + layout.board.size - 50;
+    if (state.evo || state.posterCanvas) y = viewH - 96;
 
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -2293,6 +2299,213 @@
     ctx.restore();
   }
 
+  /* ---------------- 演变导出：动图（GIF） ---------------- */
+
+  var EVO_CARD_W = 320;
+  var EVO_CARD_H = 420;
+
+  function withCtx(target, fn) {
+    var old = ctx;
+    ctx = target;
+    try {
+      fn();
+    } finally {
+      ctx = old;
+    }
+  }
+
+  function makeOffscreen(w, h) {
+    try {
+      var cv = isWx ? wx.createCanvas() : document.createElement('canvas');
+      cv.width = w;
+      cv.height = h;
+      return cv;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function drawEvoCardFrame(c2, ch, stages, idx, blend) {
+    var W = EVO_CARD_W, H = EVO_CARD_H, cx = W / 2;
+    withCtx(c2, function () {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#F6EDDA';
+      ctx.fillRect(0, 0, W, H);
+
+      rr(14, 14, W - 28, H - 28, 16);
+      ctx.strokeStyle = 'rgba(180,145,78,0.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      rr(21, 21, W - 42, H - 42, 12);
+      ctx.strokeStyle = 'rgba(168,58,42,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      text('字 源 演 变', cx, 54, 13, C.gold, 'center', 'middle', 'bold');
+
+      var gy = 196, radius = 92;
+      ctx.beginPath();
+      ctx.arc(cx, gy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(250,242,226,0.95)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(180,145,78,0.38)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      var gsize = 168;
+      if (blend > 0 && idx > 0) {
+        evoGlyph(ch, stages[idx - 1], cx, gy, gsize, 1 - blend);
+        evoGlyph(ch, stages[idx], cx, gy, gsize, blend);
+      } else {
+        evoGlyph(ch, stages[idx], cx, gy, gsize, 1);
+      }
+
+      var meta = EVO_META[stages[idx]];
+      text('「' + meta.name + '」', cx, 316, 20, C.ink, 'center', 'middle', 'bold');
+      text(meta.era + ' · ' + meta.note, cx, 342, 10.5, C.inkSoft, 'center', 'middle');
+
+      var ALL = ['oracle', 'bronze', 'seal', 'kai'];
+      var gap = 34, tlY = 368;
+      var sx = cx - gap * 1.5;
+      ctx.strokeStyle = 'rgba(150,120,80,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx, tlY);
+      ctx.lineTo(sx + gap * 3, tlY);
+      ctx.stroke();
+      var curAll = ALL.indexOf(stages[idx]);
+      for (var d = 0; d < ALL.length; d++) {
+        var has = stages.indexOf(ALL[d]) >= 0;
+        var active = d === curAll;
+        ctx.beginPath();
+        ctx.arc(sx + d * gap, tlY, active ? 5 : 3.2, 0, Math.PI * 2);
+        if (!has) {
+          ctx.strokeStyle = 'rgba(150,120,80,0.5)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = active ? C.red : (d < curAll ? C.gold : 'rgba(150,120,80,0.32)');
+          ctx.fill();
+        }
+      }
+
+      text('甲骨消消乐 · ' + ch.kai + ' ' + ch.pinyin, cx, 394, 10,
+        'rgba(90,74,52,0.55)', 'center', 'middle');
+    });
+  }
+
+  function evoImagesReady(ch, stages) {
+    for (var i = 1; i < stages.length - 1; i++) {
+      var img = evoImage(ch.glyph, stages[i]);
+      if (!img || img.complete === false || !(img.naturalWidth || img.width)) return false;
+    }
+    return true;
+  }
+
+  function buildEvoGif(ch, stages) {
+    if (!Gif) return null;
+    var cv = makeOffscreen(EVO_CARD_W, EVO_CARD_H);
+    if (!cv) return null;
+    var c2 = cv.getContext('2d');
+    var frames = [], delays = [];
+    var blends = [0.34, 0.68];
+
+    function grab() {
+      frames.push(Gif.quantize(c2.getImageData(0, 0, EVO_CARD_W, EVO_CARD_H).data));
+    }
+
+    for (var i = 0; i < stages.length; i++) {
+      if (i > 0) {
+        for (var b = 0; b < blends.length; b++) {
+          drawEvoCardFrame(c2, ch, stages, i, blends[b]);
+          grab();
+          delays.push(110);
+        }
+      }
+      drawEvoCardFrame(c2, ch, stages, i, 0);
+      grab();
+      delays.push(820);
+    }
+    return Gif.encode(frames, EVO_CARD_W, EVO_CARD_H, delays);
+  }
+
+  var B64CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+  function bytesToBase64(bytes) {
+    var out = '';
+    var len = bytes.length;
+    var i = 0;
+    for (; i + 2 < len; i += 3) {
+      var n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+      out += B64CHARS.charAt((n >> 18) & 63) + B64CHARS.charAt((n >> 12) & 63) +
+        B64CHARS.charAt((n >> 6) & 63) + B64CHARS.charAt(n & 63);
+    }
+    var rest = len - i;
+    if (rest === 1) {
+      var n1 = bytes[i] << 16;
+      out += B64CHARS.charAt((n1 >> 18) & 63) + B64CHARS.charAt((n1 >> 12) & 63) + '==';
+    } else if (rest === 2) {
+      var n2 = (bytes[i] << 16) | (bytes[i + 1] << 8);
+      out += B64CHARS.charAt((n2 >> 18) & 63) + B64CHARS.charAt((n2 >> 12) & 63) +
+        B64CHARS.charAt((n2 >> 6) & 63) + '=';
+    }
+    return out;
+  }
+
+  function saveEvoGif(ch, bytes) {
+    if (isWx) {
+      try {
+        var path = wx.env.USER_DATA_PATH + '/evo-' + ch.id + '.gif';
+        wx.getFileSystemManager().writeFileSync(path, bytesToBase64(bytes), 'base64');
+        wx.saveImageToPhotosAlbum({
+          filePath: path,
+          success: function () { showToast('动图已存入相册'); },
+          fail: function () { showToast('未获相册授权'); }
+        });
+      } catch (e) {
+        showToast('存图失败');
+      }
+      return;
+    }
+    try {
+      var blob = new Blob([bytes], { type: 'image/gif' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = '字源演变-' + ch.kai + '.gif';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      showToast('动图已存下');
+    } catch (e) {
+      showToast('存图失败');
+    }
+  }
+
+  function exportEvoGif() {
+    var ev = state.evo;
+    if (!ev) return;
+    if (!Gif) {
+      showToast('此版本不支持存动图');
+      return;
+    }
+    if (!evoImagesReady(ev.ch, ev.stages)) {
+      showToast('字形还在加载，稍候再试');
+      return;
+    }
+    Sfx.play('tap');
+    showToast('正在生成动图…');
+    setTimeout(function () {
+      var bytes = buildEvoGif(ev.ch, ev.stages);
+      if (!bytes) {
+        showToast('生成失败');
+        return;
+      }
+      saveEvoGif(ev.ch, bytes);
+    }, 60);
+  }
+
   function drawEvolution() {
     var ev = state.evo;
     if (!ev) return;
@@ -2410,10 +2623,15 @@
     drawLines(lines, cx, adultTop, 14, 10.5, 'rgba(58,45,30,0.72)');
 
     ui.evoCard = { x: x, y: y, w: w, h: h };
-    ui.evoReplay = { x: cx - 96, y: btnY, w: 88, h: 34 };
-    ui.evoClose = { x: cx + 8, y: btnY, w: 88, h: 34 };
-    drawButton(ui.evoReplay, '重播', { ghost: true, size: 12 });
-    drawButton(ui.evoClose, '合上', { size: 12 });
+    var bw = Math.floor((w - 56) / 3);
+    var bgap = (w - 44 - bw * 3) / 2;
+    var bx = x + 22;
+    ui.evoReplay = { x: bx, y: btnY, w: bw, h: 34 };
+    ui.evoSave = { x: bx + bw + bgap, y: btnY, w: bw, h: 34 };
+    ui.evoClose = { x: bx + (bw + bgap) * 2, y: btnY, w: bw, h: 34 };
+    drawButton(ui.evoReplay, '重播', { ghost: true, size: 11.5 });
+    drawButton(ui.evoSave, '存动图', { ghost: true, size: 11.5 });
+    drawButton(ui.evoClose, '合上', { size: 11.5 });
 
     ctx.restore();
 
@@ -2892,6 +3110,7 @@
     ui.poster = null;
     ui.evoBtn = null;
     ui.evo = null;
+    ui.evoSave = null;
 
     if (state.screen === 'start') drawStart();
     else if (state.screen === 'card') drawSpellCard();
@@ -2929,13 +3148,12 @@
       drawCombo();
       drawFlash();
       drawMilestone();
-      drawToast();
       drawFooter();
     }
     drawOverlay();
-    if (state.screen === 'card' || state.screen === 'result') drawToast();
     drawPosterPreview();
     drawEvolution();
+    drawToast();
   }
 
   /* ---------------- 输入 ---------------- */
@@ -3006,6 +3224,7 @@
         Sfx.play('select');
         return;
       }
+      if (inRect(x, y, ui.evoSave)) { exportEvoGif(); return; }
       if (inRect(x, y, ui.evoClose) || !inRect(x, y, ui.evoCard)) state.evo = null;
       return;
     }
