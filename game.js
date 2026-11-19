@@ -7,6 +7,10 @@
   var Glyphs = isWx ? require('./js/glyphs.js') : window.OracleGlyphs;
   var Data = isWx ? require('./js/data.js') : window.OracleData;
   var Sfx = isWx ? require('./js/sfx.js') : window.OracleSfx;
+  var Evo = null;
+  try {
+    Evo = isWx ? require('./js/evo-data.js') : window.OracleEvo;
+  } catch (e) { Evo = null; }
 
   var SIZE = Core.SIZE;
   var LEVEL_COUNT = Data.LEVELS.length;
@@ -214,6 +218,7 @@
     librarySel: null,
     noteSel: null,
     posterCanvas: null,
+    evo: null,
     mode: progress.mode,
     levelIndex: 0,
     grid: null,
@@ -272,6 +277,9 @@
     noteCells: null,
     noteClose: null,
     poster: null,
+    evoBtn: null,
+    evoReplay: null,
+    evoClose: null,
     posterSave: null,
     posterClose: null,
     posterImage: null
@@ -477,6 +485,7 @@
     state.comboText = null;
     state.toast = null;
     state.posterCanvas = null;
+    state.evo = null;
     state.hint = null;
     state.idleTime = 0;
     state.cardT = 0;
@@ -549,6 +558,7 @@
     state.librarySel = null;
     state.noteSel = null;
     state.posterCanvas = null;
+    state.evo = null;
     state.toast = null;
   }
 
@@ -1033,6 +1043,7 @@
     }
     if (state.screen === 'card') state.cardT += dt;
     if (state.screen === 'quiz' && state.quiz) state.quiz.t += dt;
+    if (state.evo) state.evo.t = Math.min(EVO_TOTAL, state.evo.t + dt);
 
     if (state.grid && state.screen === 'play') {
       var k = 1 - Math.exp(-20 * dt);
@@ -2016,8 +2027,9 @@
     ctx.stroke();
 
     Glyphs.drawById(ctx, ch.glyph, gx, gy, 82, 2.6, C.ink, true);
+    ui.evoBtn = { x: gx - 52, y: gy - 52, w: 104, h: 104 };
 
-    text('甲骨', gx, y + 166, 9, C.inkFaint, 'center', 'middle');
+    text('甲骨 · 点看演变', gx, y + 166, 9, C.inkFaint, 'center', 'middle');
 
     text(ch.kai, cx, y + 200, 34, C.red, 'center', 'middle', 'bold');
     text(ch.pinyin, cx + 30, y + 196, 11, C.inkSoft, 'left', 'middle');
@@ -2097,6 +2109,171 @@
     text(state.mode === 'kid' ? '童蒙本' : '雅士本', x + 24, y + 26, 9, C.inkFaint, 'left', 'middle');
 
     ctx.restore();
+  }
+
+  /* ---------------- 弹层：字源演变 ---------------- */
+
+  var EVO_TOTAL = 5;
+  var EVO_FADE = 0.42;
+  var EVO_META = {
+    oracle: { name: '甲骨文', era: '商', note: '契刻于龟甲兽骨，刀锋瘦硬' },
+    bronze: { name: '金文', era: '商周', note: '铸于青铜彝器，笔画圆浑' },
+    seal: { name: '小篆', era: '秦', note: '秦并天下，书同文，字形匀整' },
+    kai: { name: '楷书', era: '今', note: '隶楷递变，沿用至今' }
+  };
+  var evoImages = {};
+
+  function evoStages(glyph) {
+    var mask = (Evo && Evo[glyph]) || '';
+    var out = ['oracle'];
+    if (mask.indexOf('b') >= 0) out.push('bronze');
+    if (mask.indexOf('s') >= 0) out.push('seal');
+    out.push('kai');
+    return out;
+  }
+
+  function evoImage(glyph, style) {
+    var key = glyph + '-' + style;
+    if (evoImages[key]) return evoImages[key];
+    var img = null;
+    try {
+      img = isWx ? wx.createImage() : new Image();
+      img.src = 'assets/evo/' + key + '.png';
+    } catch (e) { img = null; }
+    evoImages[key] = img;
+    return img;
+  }
+
+  function openEvolution(ch) {
+    if (!ch) return;
+    var stages = evoStages(ch.glyph);
+    for (var i = 1; i < stages.length - 1; i++) evoImage(ch.glyph, stages[i]);
+    state.evo = { ch: ch, stages: stages, t: 0 };
+    Sfx.play('select');
+  }
+
+  function evoGlyph(ch, style, x, y, size, alpha) {
+    if (alpha <= 0.01) return;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    if (style === 'oracle') {
+      Glyphs.drawById(ctx, ch.glyph, x, y, size, Math.max(1.8, size * 0.05), C.ink, true);
+    } else if (style === 'kai') {
+      text(ch.kai, x, y + 2, size * 0.94, C.ink, 'center', 'middle', 'bold');
+    } else {
+      var img = evoImage(ch.glyph, style);
+      var ok = img && img.complete !== false && (img.naturalWidth || img.width) > 0;
+      if (ok) ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    }
+    ctx.restore();
+  }
+
+  function drawEvolution() {
+    var ev = state.evo;
+    if (!ev) return;
+    var ch = ev.ch;
+    var stages = ev.stages;
+    var t = ev.t;
+
+    ctx.fillStyle = 'rgba(24,17,10,0.64)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    var w = Math.min(layout.contentW - 24, 302);
+    var h = Math.min(470, viewH - 40);
+    var cx = viewW / 2;
+    var x = cx - w / 2;
+    var y = Math.max(safeTop + 16, (viewH - h) / 2);
+    var compact = h < 446;
+
+    var t0 = Math.min(1, t / 0.28);
+    var ease = 1 - Math.pow(1 - t0, 3);
+
+    ctx.save();
+    ctx.translate(cx, y + h / 2);
+    ctx.scale(0.94 + 0.06 * ease, 0.94 + 0.06 * ease);
+    ctx.translate(-cx, -(y + h / 2));
+    ctx.globalAlpha = ease;
+
+    drawCard(x, y, w, h);
+
+    text('字源演变', cx, y + 28, 11, C.gold, 'center', 'middle', 'bold');
+
+    var per = EVO_TOTAL / stages.length;
+    var idx = Math.min(stages.length - 1, Math.floor(t / per));
+    var local = t - idx * per;
+    var k = Math.min(1, local / EVO_FADE);
+
+    var gy = y + (compact ? 130 : 150);
+    var gsize = compact ? 126 : 152;
+    var radius = compact ? 70 : 84;
+
+    ctx.beginPath();
+    ctx.arc(cx, gy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(250,242,226,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(180,145,78,0.32)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    if (idx > 0 && local < EVO_FADE) {
+      evoGlyph(ch, stages[idx - 1], cx, gy, gsize * (1 + 0.06 * k), 1 - k);
+    }
+    evoGlyph(ch, stages[idx], cx, gy, gsize * (0.94 + 0.06 * k), k);
+
+    var meta = EVO_META[stages[idx]];
+    var nameY = gy + radius + 26;
+    text('「' + meta.name + '」', cx, nameY, 17, C.ink, 'center', 'middle', 'bold');
+    var capY = nameY + 22;
+    text(meta.era + ' · ' + meta.note, cx, capY, 10.5, C.inkSoft, 'center', 'middle');
+
+    /* 时间轴 */
+    var tlY = capY + 32;
+    var gapW = Math.min(44, (w - 120) / Math.max(1, stages.length - 1));
+    var startX = cx - (stages.length - 1) * gapW / 2;
+    ctx.strokeStyle = 'rgba(150,120,80,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startX, tlY);
+    ctx.lineTo(startX + (stages.length - 1) * gapW, tlY);
+    ctx.stroke();
+    for (var i = 0; i < stages.length; i++) {
+      var dotX = startX + i * gapW;
+      var active = i === idx;
+      ctx.beginPath();
+      ctx.arc(dotX, tlY, active ? 4.5 : 3, 0, Math.PI * 2);
+      ctx.fillStyle = active ? C.red : (i < idx ? C.gold : 'rgba(150,120,80,0.3)');
+      ctx.fill();
+    }
+
+    var divY = tlY + 20;
+    ctx.strokeStyle = 'rgba(150,120,80,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(x + 44, divY);
+    ctx.lineTo(x + w - 44, divY);
+    ctx.stroke();
+
+    var charY = divY + 22;
+    text(ch.kai + '　' + ch.pinyin + ' · ' + ch.meaning,
+      cx, charY, 13, C.red, 'center', 'middle', 'bold');
+
+    var btnY = y + h - 52;
+    var adultTop = charY + 20;
+    var lines = wrap(ch.adult, w - 56, 10.5);
+    var maxLines = Math.max(1, Math.floor((btnY - 12 - adultTop) / 14) + 1);
+    if (lines.length > maxLines) lines = lines.slice(0, maxLines);
+    if (lines.length > 3) lines = lines.slice(0, 3);
+    drawLines(lines, cx, adultTop, 14, 10.5, 'rgba(58,45,30,0.72)');
+
+    ui.evoCard = { x: x, y: y, w: w, h: h };
+    ui.evoReplay = { x: cx - 96, y: btnY, w: 88, h: 34 };
+    ui.evoClose = { x: cx + 8, y: btnY, w: 88, h: 34 };
+    drawButton(ui.evoReplay, '重播', { ghost: true, size: 12 });
+    drawButton(ui.evoClose, '合上', { size: 12 });
+
+    ctx.restore();
+
+    text('金文 · 小篆字形取自维基共享资源', cx, y + h + 16, 9,
+      'rgba(255,248,235,0.55)', 'center', 'middle');
   }
 
   /* ---------------- 弹层：字灵考校 ---------------- */
@@ -2436,6 +2613,9 @@
       text(ch.pinyin, dcx + 26, dy + 130, 12, C.inkSoft, 'left', 'middle');
       text(ch.meaning, dcx, dy + 158, 11, C.inkSoft, 'center', 'middle');
 
+      ui.evoBtn = { x: dcx + 52, y: dy + 122, w: 62, h: 24 };
+      drawButton(ui.evoBtn, '看演变', { ghost: true, size: 9.5 });
+
       var ky = dy + 182;
       var kid = wrap(ch.kid, dw - 44, 11.5);
       if (kid.length > 3) kid = kid.slice(0, 3);
@@ -2559,6 +2739,7 @@
     ui.noteCells = null;
     ui.noteClose = null;
     ui.poster = null;
+    ui.evoBtn = null;
 
     if (state.screen === 'start') drawStart();
     else if (state.screen === 'card') drawSpellCard();
@@ -2601,6 +2782,7 @@
     drawOverlay();
     if (state.screen === 'card' || state.screen === 'result') drawToast();
     drawPosterPreview();
+    drawEvolution();
   }
 
   /* ---------------- 输入 ---------------- */
@@ -2665,6 +2847,16 @@
     var p = pointer;
     pointer = null;
 
+    if (state.evo) {
+      if (inRect(x, y, ui.evoReplay)) {
+        state.evo.t = 0;
+        Sfx.play('select');
+        return;
+      }
+      if (inRect(x, y, ui.evoClose) || !inRect(x, y, ui.evoCard)) state.evo = null;
+      return;
+    }
+
     if (state.posterCanvas) {
       if (inRect(x, y, ui.posterSave)) { Sfx.play('tap'); downloadPoster(); return; }
       if (inRect(x, y, ui.posterClose) || !inRect(x, y, ui.posterImage)) {
@@ -2679,7 +2871,7 @@
       inRect(x, y, ui.share) || inRect(x, y, ui.modeKid) || inRect(x, y, ui.modeAdult) ||
       inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
       inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster) ||
-      inRect(x, y, ui.quick);
+      inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
@@ -2697,6 +2889,7 @@
     }
 
     if (state.screen === 'card') {
+      if (inRect(x, y, ui.evoBtn)) { openEvolution(Data.char(levelConfig().char)); return; }
       if (inRect(x, y, ui.share)) { shareChallenge(); return; }
       if (inRect(x, y, ui.poster)) { buildPoster(); return; }
       if (inRect(x, y, ui.primary)) {
@@ -2753,6 +2946,7 @@
         return;
       }
       if (state.librarySel) {
+        if (inRect(x, y, ui.evoBtn)) { openEvolution(Data.char(state.librarySel)); return; }
         if (inRect(x, y, ui.libraryClose)) state.librarySel = null;
         return;
       }
