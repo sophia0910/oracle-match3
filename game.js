@@ -281,6 +281,7 @@
     noteClose: null,
     poster: null,
     evoBtn: null,
+    evo: null,
     evoReplay: null,
     evoClose: null,
     posterSave: null,
@@ -1679,19 +1680,26 @@
 
   function drawButton(rect, label, opts) {
     opts = opts || {};
-    var fill = opts.ghost ? 'rgba(255,250,238,0.7)' : C.red;
-    var color = opts.ghost ? C.inkSoft : C.cream;
+    var fs = opts.size || 15;
+    var fill = opts.ink ? C.ink : (opts.ghost ? 'rgba(255,250,238,0.7)' : C.red);
+    var color = opts.ink ? C.cream : (opts.ghost ? C.inkSoft : C.cream);
     var x = rect.x, y = rect.y, w = rect.w, h = rect.h;
 
     if (!opts.ghost) {
       ctx.save();
-      ctx.shadowColor = 'rgba(150,50,35,0.28)';
+      ctx.shadowColor = opts.ink ? 'rgba(40,30,18,0.30)' : 'rgba(150,50,35,0.28)';
       ctx.shadowBlur = 12;
       ctx.shadowOffsetY = 4;
       rr(x, y, w, h, h / 2);
       ctx.fillStyle = fill;
       ctx.fill();
       ctx.restore();
+      if (opts.ink) {
+        rr(x + 1.5, y + 1.5, w - 3, h - 3, (h - 3) / 2);
+        ctx.strokeStyle = 'rgba(196,163,102,0.55)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
     } else {
       rr(x, y, w, h, h / 2);
       ctx.fillStyle = fill;
@@ -1701,7 +1709,26 @@
       ctx.stroke();
     }
 
-    text(label, x + w / 2, y + h / 2 + 1, opts.size || 15, color, 'center', 'middle', 'bold');
+    var tx = x + w / 2;
+    if (opts.play) {
+      setFont(fs, 'bold');
+      var tw = ctx.measureText(label).width;
+      var iconW = fs * 0.6;
+      var gapI = 5;
+      var total = iconW + gapI + tw;
+      var left = x + (w - total) / 2;
+      var cy = y + h / 2 + 1;
+      ctx.beginPath();
+      ctx.moveTo(left + 1, cy - fs * 0.35);
+      ctx.lineTo(left + 1 + iconW * 0.82, cy);
+      ctx.lineTo(left + 1, cy + fs * 0.35);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      tx = left + iconW + gapI + tw / 2;
+    }
+
+    text(label, tx, y + h / 2 + 1, fs, color, 'center', 'middle', 'bold');
   }
 
   /* ---------------- 弹层：开始 ---------------- */
@@ -2101,15 +2128,18 @@
 
     Glyphs.drawById(ctx, ch.glyph, gx, gy, 82, 2.6, C.ink, true);
 
-    var pill = { x: gx - 39, y: y + 158, w: 78, h: 20 };
-    rr(pill.x, pill.y, pill.w, pill.h, pill.h / 2);
-    ctx.fillStyle = 'rgba(255,250,238,0.85)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(168,58,42,0.42)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    text('看字形演变', gx, y + 168.5, 9.5, C.red, 'center', 'middle', 'bold');
-    ui.evoBtn = { x: gx - 52, y: gy - 52, w: 104, h: 122 };
+    /* 圆章可点；刚进字卡的 3 秒给一圈呼吸提示 */
+    var halo = Math.max(0, 1 - state.cardT / 3);
+    if (halo > 0.01) {
+      var rp = 57 + 3 * (0.5 + 0.5 * Math.sin(state.cardT * 7));
+      ctx.beginPath();
+      ctx.arc(gx, gy, rp, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(168,58,42,' + (0.45 * halo).toFixed(3) + ')';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ui.evoBtn = { x: gx - 56, y: gy - 56, w: 112, h: 112 };
+    text('甲骨文', gx, y + 166, 9, C.inkFaint, 'center', 'middle');
 
     text(ch.kai, cx, y + 200, 34, C.red, 'center', 'middle', 'bold');
     text(ch.pinyin, cx + 30, y + 196, 11, C.inkSoft, 'left', 'middle');
@@ -2163,28 +2193,43 @@
     }
 
     var primaryLabel = state.quick ? '再来一局' : '收下此字';
+    var btnY = y + h - 68;
     if (isWx) {
       if (state.quick) {
-        ui.primary = { x: cx - 100, y: y + h - 68, w: 104, h: 44 };
-        ui.poster = { x: cx - 8, y: y + h - 68, w: 108, h: 44 };
+        ui.primary = { x: cx - 154, y: btnY, w: 104, h: 44 };
+        ui.evo = { x: cx - 44, y: btnY, w: 92, h: 44 };
+        ui.poster = { x: cx + 54, y: btnY, w: 100, h: 44 };
         ui.share = null;
-        drawButton(ui.primary, primaryLabel, { size: 13 });
-        drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
+        drawButton(ui.primary, primaryLabel, { size: 12.5 });
+        drawButton(ui.poster, '存字卡', { ghost: true, size: 11 });
       } else {
-        ui.primary = { x: cx - 146, y: y + h - 68, w: 106, h: 44 };
-        ui.poster = { x: cx - 32, y: y + h - 68, w: 76, h: 44 };
-        ui.share = { x: cx + 52, y: y + h - 68, w: 86, h: 44 };
-        drawButton(ui.primary, primaryLabel, { size: 13 });
-        drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
-        drawButton(ui.share, '分享挑战', { ghost: true, size: 10.5 });
+        ui.primary = { x: cx - 162, y: btnY, w: 92, h: 44 };
+        ui.evo = { x: cx - 65, y: btnY, w: 78, h: 44 };
+        ui.poster = { x: cx + 18, y: btnY, w: 66, h: 44 };
+        ui.share = { x: cx + 89, y: btnY, w: 72, h: 44 };
+        drawButton(ui.primary, primaryLabel, { size: 11.5 });
+        drawButton(ui.poster, '存字卡', { ghost: true, size: 9.5 });
+        drawButton(ui.share, '分享', { ghost: true, size: 9.5 });
       }
     } else {
       ui.share = null;
-      ui.primary = { x: cx - 128, y: y + h - 68, w: 128, h: 44 };
-      ui.poster = { x: cx + 8, y: y + h - 68, w: 120, h: 44 };
-      drawButton(ui.primary, primaryLabel, { size: 14.5 });
-      drawButton(ui.poster, '存字卡', { ghost: true, size: 12 });
+      ui.primary = { x: cx - 150, y: btnY, w: 104, h: 44 };
+      ui.evo = { x: cx - 40, y: btnY, w: 96, h: 44 };
+      ui.poster = { x: cx + 62, y: btnY, w: 88, h: 44 };
+      drawButton(ui.primary, primaryLabel, { size: 14 });
+      drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
     }
+
+    /* 演变按钮：墨色实心 + 播放符号；字卡刚出现时轻微呼吸 */
+    var es = state.cardT < 3
+      ? 1 + 0.05 * (1 - state.cardT / 3) * Math.abs(Math.sin(state.cardT * 8))
+      : 1;
+    ctx.save();
+    ctx.translate(ui.evo.x + ui.evo.w / 2, ui.evo.y + ui.evo.h / 2);
+    ctx.scale(es, es);
+    ctx.translate(-(ui.evo.x + ui.evo.w / 2), -(ui.evo.y + ui.evo.h / 2));
+    drawButton(ui.evo, '看演变', { ink: true, size: isWx ? (state.quick ? 11 : 10.5) : 12, play: true });
+    ctx.restore();
 
     text(state.mode === 'kid' ? '童蒙本' : '雅士本', x + 24, y + 26, 9, C.inkFaint, 'left', 'middle');
 
@@ -2689,15 +2734,15 @@
       var ml = wrap(msg, dw - 48, 12);
       drawLines(ml, dcx, dy + 200, 20, 12, C.inkSoft);
 
-      ui.evoBtn = { x: dcx - 31, y: dy + 124, w: 62, h: 24 };
-      drawButton(ui.evoBtn, '看演变', { ghost: true, size: 9.5 });
+      ui.evoBtn = { x: dcx - 35, y: dy + 122, w: 70, h: 26 };
+      drawButton(ui.evoBtn, '看演变', { ink: true, size: 10, play: true });
     } else {
       text(ch.kai, dcx, dy + 134, 30, C.red, 'center', 'middle', 'bold');
       text(ch.pinyin, dcx + 26, dy + 130, 12, C.inkSoft, 'left', 'middle');
       text(ch.meaning, dcx, dy + 158, 11, C.inkSoft, 'center', 'middle');
 
-      ui.evoBtn = { x: dcx + 52, y: dy + 122, w: 62, h: 24 };
-      drawButton(ui.evoBtn, '看演变', { ghost: true, size: 9.5 });
+      ui.evoBtn = { x: dcx + 44, y: dy + 120, w: 70, h: 26 };
+      drawButton(ui.evoBtn, '看演变', { ink: true, size: 10, play: true });
 
       var ky = dy + 182;
       var kid = wrap(ch.kid, dw - 44, 11.5);
@@ -2826,6 +2871,7 @@
     ui.noteClose = null;
     ui.poster = null;
     ui.evoBtn = null;
+    ui.evo = null;
 
     if (state.screen === 'start') drawStart();
     else if (state.screen === 'card') drawSpellCard();
@@ -2959,6 +3005,7 @@
       inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
       inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster) ||
       inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn) ||
+      inRect(x, y, ui.evo) ||
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose);
     if (onButton) Sfx.play('tap');
 
@@ -2978,7 +3025,7 @@
     }
 
     if (state.screen === 'card') {
-      if (inRect(x, y, ui.evoBtn)) { openEvolution(Data.char(levelConfig().char)); return; }
+      if (inRect(x, y, ui.evoBtn) || inRect(x, y, ui.evo)) { openEvolution(Data.char(levelConfig().char)); return; }
       if (inRect(x, y, ui.share)) { shareChallenge(); return; }
       if (inRect(x, y, ui.poster)) { buildPoster(); return; }
       if (inRect(x, y, ui.primary)) {
