@@ -2351,23 +2351,43 @@
     var capY = nameY + 22;
     text(meta.era + ' · ' + meta.note, cx, capY, 10.5, C.inkSoft, 'center', 'middle');
 
-    /* 时间轴 */
-    var tlY = capY + 32;
-    var gapW = Math.min(44, (w - 120) / Math.max(1, stages.length - 1));
-    var startX = cx - (stages.length - 1) * gapW / 2;
+    /* 时间轴：固定四个节点，缺拓本的画空心点 */
+    var ALL_EVO = ['oracle', 'bronze', 'seal', 'kai'];
+    var missing = [];
+    for (var m = 0; m < ALL_EVO.length; m++) {
+      if (stages.indexOf(ALL_EVO[m]) < 0) missing.push(ALL_EVO[m]);
+    }
+    var tlY = capY + (missing.length ? 34 : 32);
+    var gapW = Math.min(42, (w - 130) / (ALL_EVO.length - 1));
+    var startX = cx - (ALL_EVO.length - 1) * gapW / 2;
     ctx.strokeStyle = 'rgba(150,120,80,0.28)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(startX, tlY);
-    ctx.lineTo(startX + (stages.length - 1) * gapW, tlY);
+    ctx.lineTo(startX + (ALL_EVO.length - 1) * gapW, tlY);
     ctx.stroke();
-    for (var i = 0; i < stages.length; i++) {
+    var curAll = ALL_EVO.indexOf(stages[idx]);
+    for (var i = 0; i < ALL_EVO.length; i++) {
       var dotX = startX + i * gapW;
-      var active = i === idx;
+      var has = stages.indexOf(ALL_EVO[i]) >= 0;
+      var active = i === curAll;
       ctx.beginPath();
-      ctx.arc(dotX, tlY, active ? 4.5 : 3, 0, Math.PI * 2);
-      ctx.fillStyle = active ? C.red : (i < idx ? C.gold : 'rgba(150,120,80,0.3)');
-      ctx.fill();
+      ctx.arc(dotX, tlY, active ? 4.5 : (has ? 3 : 2.6), 0, Math.PI * 2);
+      if (!has) {
+        ctx.strokeStyle = 'rgba(150,120,80,0.42)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = active ? C.red : (i < curAll ? C.gold : 'rgba(150,120,80,0.3)');
+        ctx.fill();
+      }
+    }
+
+    if (missing.length) {
+      var names = [];
+      for (var n = 0; n < missing.length; n++) names.push(EVO_META[missing[n]].name);
+      text('本字' + names.join('、') + '拓本未见，已略过',
+        cx, capY + 17, 9, 'rgba(168,58,42,0.62)', 'center', 'middle');
     }
 
     var divY = tlY + 20;
