@@ -197,6 +197,7 @@
   }
 
   function recordChallenge() {
+    if (state.quick) return;
     if (!challenge || challenge.done) return;
     if (challenge.level !== state.levelIndex) return;
     challenge.done = true;
@@ -221,6 +222,8 @@
     steps: 0,
     score: 0,
     maxMult: 1,
+    quick: false,
+    timeLeft: 0,
     combo: 0,
     streak: 0,
     collected: {},
@@ -258,6 +261,7 @@
     optA: null,
     optB: null,
     library: null,
+    quick: null,
     close: null,
     tabChars: null,
     tabVerses: null,
@@ -274,7 +278,64 @@
   };
 
   function levelConfig() {
+    if (state.quick && quickLevel) return quickLevel;
     return Data.LEVELS[state.levelIndex] || Data.LEVELS[0];
+  }
+
+  /* ---------------- 快契：90 秒一字一局 ---------------- */
+
+  var QUICK_SECONDS = 90;
+  var QUICK_GOAL = 8;
+  var quickLevel = null;
+
+  function quickCandidates() {
+    var ids = [];
+    function add(id) {
+      if (Data.BY_ID[id] && ids.indexOf(id) < 0) ids.push(id);
+    }
+    for (var i = 0; i < progress.learned.length; i++) add(progress.learned[i]);
+    for (var j = 0; j < progress.unlocked && j < LEVEL_COUNT; j++) add(Data.LEVELS[j].char);
+    if (!ids.length) add(Data.LEVELS[0].char);
+    return ids;
+  }
+
+  function startQuick() {
+    var ids = quickCandidates();
+    var target = ids[Math.floor(Math.random() * ids.length)];
+    var tType = Data.typeOf(target);
+    var decoys = [];
+    var guard = 0;
+    while (decoys.length < 4 && guard < 80) {
+      guard++;
+      var c = Data.CHARS[Math.floor(Math.random() * Data.CHARS.length)].id;
+      var ty = Data.typeOf(c);
+      if (ty == null || ty === tType || decoys.indexOf(c) >= 0) continue;
+      var dup = false;
+      for (var d = 0; d < decoys.length; d++) {
+        if (Data.typeOf(decoys[d]) === ty) dup = true;
+      }
+      if (!dup) decoys.push(c);
+    }
+
+    quickLevel = {
+      title: '快契',
+      char: target,
+      pool: [target, target, target, target].concat(decoys),
+      req: [{ id: target, n: QUICK_GOAL }],
+      moves: 0,
+      spirit: []
+    };
+
+    state.quick = true;
+    startLevel(0);
+    state.timeLeft = QUICK_SECONDS;
+    state.moves = 999;
+  }
+
+  function leaveQuick() {
+    state.quick = false;
+    quickLevel = null;
+    state.timeLeft = 0;
   }
 
   function levelPool() {
@@ -457,6 +518,14 @@
     saveProgress();
   }
 
+  function learnQuickChar() {
+    var ch = Data.char(levelConfig().char);
+    if (progress.learned.indexOf(ch.id) < 0) {
+      progress.learned.push(ch.id);
+      saveProgress();
+    }
+  }
+
   function advance() {
     if (state.levelIndex >= LEVEL_COUNT - 1) {
       state.screen = 'result';
@@ -474,6 +543,7 @@
 
   function goHome() {
     state.screen = 'start';
+    leaveQuick();
     state.quiz = null;
     state.result = null;
     state.librarySel = null;
@@ -780,7 +850,8 @@
     state.idleTime = 0;
 
     if (isComplete()) {
-      completeLevel();
+      if (state.quick) learnQuickChar();
+      else completeLevel();
       recordChallenge();
       Sfx.play('win');
       state.screen = 'card';
@@ -799,6 +870,16 @@
     if (!Core.findPossibleMove(state.grid)) {
       reshuffle();
     }
+  }
+
+  function quickTimeUp() {
+    if (state.screen !== 'play') return;
+    Sfx.play('fail');
+    state.phase = 'idle';
+    state.timer = 0;
+    state.selected = -1;
+    state.screen = 'result';
+    state.result = 'quickfail';
   }
 
   function vibrate() {
@@ -908,6 +989,11 @@
 
   function update(dt) {
     state.time += dt;
+
+    if (state.quick && state.screen === 'play') {
+      state.timeLeft = Math.max(0, state.timeLeft - dt);
+      if (state.timeLeft <= 0) quickTimeUp();
+    }
 
     for (var i = state.particles.length - 1; i >= 0; i--) {
       var pt = state.particles[i];
@@ -1246,9 +1332,16 @@
     }
 
     var mx = p.x + p.w - 30;
-    text(String(state.moves), mx, p.y + 34, 22,
-      state.moves <= 4 ? C.red : C.ink, 'center', 'middle', 'bold');
-    text('步', mx, p.y + 56, 9.5, C.inkSoft, 'center', 'middle');
+    if (state.quick) {
+      var secs = Math.max(0, Math.ceil(state.timeLeft));
+      text(String(secs), mx, p.y + 34, 22,
+        secs <= 10 ? C.red : C.ink, 'center', 'middle', 'bold');
+      text('秒', mx, p.y + 56, 9.5, C.inkSoft, 'center', 'middle');
+    } else {
+      text(String(state.moves), mx, p.y + 34, 22,
+        state.moves <= 4 ? C.red : C.ink, 'center', 'middle', 'bold');
+      text('步', mx, p.y + 56, 9.5, C.inkSoft, 'center', 'middle');
+    }
   }
 
   function drawBoardPanel() {
@@ -1601,7 +1694,7 @@
   function drawStart() {
     var cx = viewW / 2;
     var w = Math.min(layout.contentW - 8, 332);
-    var h = 452;
+    var h = 500;
     var x = cx - w / 2;
     var y = Math.max(safeTop + 12, viewH / 2 - h / 2);
 
@@ -1655,13 +1748,16 @@
     if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title);
     else drawButton(ui.primary, '开始「' + Data.LEVELS[nextIndex].title + '」');
 
-    ui.library = { x: cx - 100, y: y + 376, w: 200, h: 30 };
+    ui.quick = { x: cx - 100, y: y + 376, w: 200, h: 38 };
+    drawButton(ui.quick, '快契 · 90 秒一字', { ghost: true, size: 12 });
+
+    ui.library = { x: cx - 100, y: y + 422, w: 200, h: 30 };
     drawButton(ui.library, '字库 · 读辞 · 史官手记',
       { ghost: true, size: 11.5 });
 
-    text('每契约五分钟 · 共十契三十字', cx, y + 422, 10,
+    text('每契约五分钟 · 共十契三十字', cx, y + 466, 10,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text('字形源自汉典 · CC0', cx, y + 440, 9,
+    text('字形源自汉典 · CC0', cx, y + 484, 9,
       'rgba(90,74,52,0.4)', 'center', 'middle');
   }
 
@@ -1750,7 +1846,7 @@
     posterText(p, '甲 骨 消 消 乐', 540, 122, 38, '#B4914E', 'center', 'middle', 'bold');
     posterText(p, '契于龟甲 · 消而成文', 540, 168, 20,
       'rgba(58,45,30,0.42)', 'center', 'middle');
-    posterText(p, '契文已成 · ' + lv.title, 540, 218, 23,
+    posterText(p, state.quick ? '快契 · 九十秒成文' : '契文已成 · ' + lv.title, 540, 218, 23,
       '#B4914E', 'center', 'middle', 'bold');
 
     p.beginPath();
@@ -1795,8 +1891,9 @@
       posterText(p, ch.gloss, 540, 1016, 28, 'rgba(58,45,30,0.55)', 'center', 'middle');
     }
 
-    posterText(p, '第 ' + (state.levelIndex + 1) + ' 契 · ' + state.steps + ' 步 · ' +
-      state.score + ' 分 · 连击 ×' + (state.maxMult || 1),
+    posterText(p, (state.quick ? '九十秒' : '第 ' + (state.levelIndex + 1) + ' 契') +
+      ' · ' + (state.quick ? '' : state.steps + ' 步 · ') + state.score + ' 分 · 连击 ×' +
+      (state.maxMult || 1),
       540, 1128, 26, 'rgba(58,45,30,0.58)', 'center', 'middle');
     posterText(p, '字卡入库 · 已识 ' + progress.learned.length + ' / ' +
       Data.CHARS.length + ' 字',
@@ -1906,7 +2003,8 @@
 
     drawCard(x, y, w, h);
 
-    text('契文已成 · ' + lv.title, cx, y + 32, 11, C.gold, 'center', 'middle', 'bold');
+    text(state.quick ? '快契已成 · 九十秒' : '契文已成 · ' + lv.title,
+      cx, y + 32, 11, C.gold, 'center', 'middle', 'bold');
 
     var gx = cx, gy = y + 102;
     ctx.beginPath();
@@ -1949,7 +2047,9 @@
     ctx.lineTo(x + w - 44, y + 341);
     ctx.stroke();
 
-    text('本关 ' + state.steps + ' 步 · 得分 ' + state.score + ' · 最高连击 ×' + state.maxMult,
+    text(state.quick
+      ? '九十秒 · 得分 ' + state.score + ' · 最高连击 ×' + state.maxMult
+      : '本关 ' + state.steps + ' 步 · 得分 ' + state.score + ' · 最高连击 ×' + state.maxMult,
       cx, y + 354, 10.5, C.inkSoft, 'center', 'middle');
     text('字卡入库 · 已识 ' + progress.learned.length + ' / ' + Data.CHARS.length,
       cx, y + 374, 10.5, C.inkSoft, 'center', 'middle');
@@ -1959,7 +2059,7 @@
       text('去字库可以翻看这张字卡', cx, y + 394, 10.5, C.inkFaint, 'center', 'middle');
     }
 
-    if (challenge && challenge.done && challenge.level === state.levelIndex && challenge.step) {
+    if (!state.quick && challenge && challenge.done && challenge.level === state.levelIndex && challenge.step) {
       var mine = challenge.mine || state.steps;
       var gap = challenge.step - mine;
       var cmp = gap > 0
@@ -1970,17 +2070,27 @@
       text(cmp, cx, y + h - 92, 11, gap >= 0 ? C.red : C.inkSoft, 'center', 'middle', 'bold');
     }
 
+    var primaryLabel = state.quick ? '再来一局' : '收下此字';
     if (isWx) {
-      ui.primary = { x: cx - 146, y: y + h - 68, w: 106, h: 44 };
-      ui.poster = { x: cx - 32, y: y + h - 68, w: 76, h: 44 };
-      ui.share = { x: cx + 52, y: y + h - 68, w: 86, h: 44 };
-      drawButton(ui.primary, '收下此字', { size: 13 });
-      drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
-      drawButton(ui.share, '分享挑战', { ghost: true, size: 10.5 });
+      if (state.quick) {
+        ui.primary = { x: cx - 100, y: y + h - 68, w: 104, h: 44 };
+        ui.poster = { x: cx - 8, y: y + h - 68, w: 108, h: 44 };
+        ui.share = null;
+        drawButton(ui.primary, primaryLabel, { size: 13 });
+        drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
+      } else {
+        ui.primary = { x: cx - 146, y: y + h - 68, w: 106, h: 44 };
+        ui.poster = { x: cx - 32, y: y + h - 68, w: 76, h: 44 };
+        ui.share = { x: cx + 52, y: y + h - 68, w: 86, h: 44 };
+        drawButton(ui.primary, primaryLabel, { size: 13 });
+        drawButton(ui.poster, '存字卡', { ghost: true, size: 11.5 });
+        drawButton(ui.share, '分享挑战', { ghost: true, size: 10.5 });
+      }
     } else {
+      ui.share = null;
       ui.primary = { x: cx - 128, y: y + h - 68, w: 128, h: 44 };
       ui.poster = { x: cx + 8, y: y + h - 68, w: 120, h: 44 };
-      drawButton(ui.primary, '收下此字', { size: 14.5 });
+      drawButton(ui.primary, primaryLabel, { size: 14.5 });
       drawButton(ui.poster, '存字卡', { ghost: true, size: 12 });
     }
 
@@ -2034,6 +2144,7 @@
 
   function drawResult() {
     var all = state.result === 'all';
+    var quickFail = state.result === 'quickfail';
     var cx = viewW / 2;
     var w = Math.min(layout.contentW - 16, 320);
     var h = 386;
@@ -2042,20 +2153,26 @@
 
     drawCard(x, y, w, h);
 
-    drawSeal(cx, y + 58, 54, all ? '成' : '再');
+    drawSeal(cx, y + 58, 54, all ? '成' : quickFail ? '时' : '再');
 
-    text(all ? '十契圆满' : '步数用尽', cx, y + 116, 23, C.ink, 'center', 'middle', 'bold');
+    text(all ? '十契圆满' : quickFail ? '九十秒已尽' : '步数用尽',
+      cx, y + 116, 23, C.ink, 'center', 'middle', 'bold');
 
     var sub = all
       ? '你已识得三十个甲骨字'
-      : (state.mode === 'kid' ? '别急，卜辞只差一点点' : '卜辞未验，再试一契');
+      : quickFail
+        ? '快契未成，再开一局'
+        : (state.mode === 'kid' ? '别急，卜辞只差一点点' : '卜辞未验，再试一契');
     text(sub, cx, y + 144, 11.5, C.inkSoft, 'center', 'middle');
 
     text('已识 ' + progress.learned.length + ' / ' + Data.CHARS.length + ' 字',
       cx, y + 184, 17, all ? C.red : C.ink, 'center', 'middle', 'bold');
 
     var lv = levelConfig();
-    text(all ? '三十字已入囊中' : '本契目标「' + Data.char(lv.char).kai + '」· 步数 ' + state.moves,
+    text(all ? '三十字已入囊中'
+      : quickFail
+        ? '本契目标「' + Data.char(lv.char).kai + '」· 已收 ' + collectedTotal() + '/' + totalRequired()
+        : '本契目标「' + Data.char(lv.char).kai + '」· 步数 ' + state.moves,
       cx, y + 208, 10.5, C.inkFaint, 'center', 'middle');
 
     ui.primary = { x: cx - 95, y: y + 244, w: 190, h: 46 };
@@ -2068,7 +2185,7 @@
       drawButton(ui.share, '回到首页', { ghost: true, size: 12 });
     } else {
       ui.secondary = { x: cx - 78, y: y + 302, w: 156, h: 38 };
-      drawButton(ui.primary, '重试此契');
+      drawButton(ui.primary, quickFail ? '再开一局' : '重试此契');
       drawButton(ui.secondary, '回到首页', { ghost: true, size: 12 });
     }
 
@@ -2561,16 +2678,19 @@
     var onButton = inRect(x, y, ui.primary) || inRect(x, y, ui.secondary) ||
       inRect(x, y, ui.share) || inRect(x, y, ui.modeKid) || inRect(x, y, ui.modeAdult) ||
       inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
-      inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster);
+      inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster) ||
+      inRect(x, y, ui.quick);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
       if (inRect(x, y, ui.modeKid)) { setMode('kid'); return; }
       if (inRect(x, y, ui.modeAdult)) { setMode('adult'); return; }
       if (inRect(x, y, ui.library)) { openLibrary(); return; }
+      if (inRect(x, y, ui.quick)) { startQuick(); return; }
       if (inRect(x, y, ui.primary)) {
         var invited = challenge && !challenge.done ? challenge.level : -1;
         var idx = invited >= 0 ? invited : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+        leaveQuick();
         startLevel(idx);
       }
       return;
@@ -2580,6 +2700,7 @@
       if (inRect(x, y, ui.share)) { shareChallenge(); return; }
       if (inRect(x, y, ui.poster)) { buildPoster(); return; }
       if (inRect(x, y, ui.primary)) {
+        if (state.quick) { startQuick(); return; }
         if (challenge && challenge.done) challenge = null;
         advance();
       }
@@ -2598,7 +2719,8 @@
       if (inRect(x, y, ui.share)) { shareChallenge(true); return; }
       if (inRect(x, y, ui.library)) { openLibrary(); return; }
       if (inRect(x, y, ui.primary)) {
-        if (state.result === 'all') startLevel(0);
+        if (state.quick) startQuick();
+        else if (state.result === 'all') startLevel(0);
         else startLevel(state.levelIndex);
         return;
       }
@@ -2664,7 +2786,8 @@
     }
 
     if (inRect(x, y, ui.restart)) {
-      startLevel(state.levelIndex);
+      if (state.quick) startQuick();
+      else startLevel(state.levelIndex);
       return;
     }
 
