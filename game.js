@@ -1,0 +1,2554 @@
+/* 甲骨消消乐 · 微信小游戏主程序（十契垂直切片） */
+(function () {
+  'use strict';
+
+  var isWx = typeof wx !== 'undefined' && typeof wx.createCanvas === 'function';
+  var Core = isWx ? require('./js/core.js') : window.OracleCore;
+  var Glyphs = isWx ? require('./js/glyphs.js') : window.OracleGlyphs;
+  var Data = isWx ? require('./js/data.js') : window.OracleData;
+  var Sfx = isWx ? require('./js/sfx.js') : window.OracleSfx;
+
+  var SIZE = Core.SIZE;
+  var LEVEL_COUNT = Data.LEVELS.length;
+
+  var C = {
+    bgTop: '#F8F0DF',
+    bgMid: '#F1E4CC',
+    bgBottom: '#E3D0AE',
+    panel: '#E7D6B7',
+    tile: '#FCF6E8',
+    tileBorder: 'rgba(122,96,62,0.26)',
+    ink: '#33291F',
+    inkSoft: 'rgba(58,45,30,0.58)',
+    inkFaint: 'rgba(58,45,30,0.38)',
+    red: '#A83A2A',
+    gold: '#B4914E',
+    cream: '#FBF3E2'
+  };
+
+  var MODE_DESC = {
+    kid: '字卡只讲一句比喻，多给四步，停久了会自己亮出提示。',
+    adult: '字卡给卜辞与字源，步数收紧，不主动提示。'
+  };
+
+  /* ---------------- 环境与画布 ---------------- */
+
+  var canvas, ctx, viewW, viewH, dpr, safeTop, layout;
+  var isBrowser = !isWx;
+
+  if (isWx) {
+    canvas = wx.createCanvas();
+    var winInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    viewW = winInfo.screenWidth || winInfo.windowWidth;
+    viewH = winInfo.screenHeight || winInfo.windowHeight;
+    dpr = Math.min(winInfo.pixelRatio || 1, 3);
+    safeTop = (winInfo.safeArea && winInfo.safeArea.top) || winInfo.statusBarHeight || 0;
+  } else {
+    canvas = document.getElementById('game');
+    viewW = window.innerWidth;
+    viewH = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    safeTop = 0;
+    canvas.style.touchAction = 'none';
+  }
+
+  ctx = canvas.getContext('2d');
+
+  function resize() {
+    if (!isWx) {
+      viewW = window.innerWidth;
+      viewH = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 3);
+    }
+    canvas.width = Math.round(viewW * dpr);
+    canvas.height = Math.round(viewH * dpr);
+    if (!isWx) {
+      canvas.style.width = viewW + 'px';
+      canvas.style.height = viewH + 'px';
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    computeLayout();
+  }
+
+  function computeLayout() {
+    var contentW = Math.min(viewW - 24, 440);
+    var x = (viewW - contentW) / 2;
+    var top = safeTop + 8;
+    var headerH = 30;
+    var panelY = top + headerH + 6;
+    var panelH = 88;
+    var boardTop = panelY + panelH + 12;
+    var avail = viewH - boardTop - 40;
+    var cell = Math.floor(Math.min((contentW - 16) / 8, avail / 8));
+    cell = Math.max(22, Math.min(52, cell));
+    var boardSize = cell * 8 + 16;
+    var boardX = (viewW - boardSize) / 2;
+    var boardY = boardTop + Math.max(0, (avail - boardSize) / 2);
+
+    layout = {
+      contentW: contentW,
+      x: x,
+      top: top,
+      panel: { x: x, y: panelY, w: contentW, h: panelH },
+      board: { x: boardX, y: boardY, size: boardSize, cell: cell, pad: 8 },
+      footerY: boardY + boardSize + 18
+    };
+  }
+
+  function tileCenter(r, c) {
+    var b = layout.board;
+    return {
+      x: b.x + b.pad + c * b.cell + b.cell / 2,
+      y: b.y + b.pad + r * b.cell + b.cell / 2
+    };
+  }
+
+  /* ---------------- 进度存储 ---------------- */
+
+  var STORE_KEY = 'oracle_slice_progress';
+
+  function loadProgress() {
+    try {
+      var raw = isWx ? wx.getStorageSync(STORE_KEY) : window.localStorage.getItem(STORE_KEY);
+      if (!raw) return null;
+      var obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!obj || typeof obj !== 'object') return null;
+      return obj;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveProgress() {
+    try {
+      var raw = JSON.stringify(progress);
+      if (isWx) wx.setStorageSync(STORE_KEY, raw);
+      else window.localStorage.setItem(STORE_KEY, raw);
+    } catch (e) { /* 忽略存储异常 */ }
+  }
+
+  var progress = { mode: 'kid', unlocked: 1, learned: [] };
+  var stored = loadProgress();
+  if (stored) {
+    if (stored.mode === 'kid' || stored.mode === 'adult') progress.mode = stored.mode;
+    if (typeof stored.unlocked === 'number') {
+      progress.unlocked = Math.max(1, Math.min(LEVEL_COUNT, Math.floor(stored.unlocked)));
+    }
+    if (Object.prototype.toString.call(stored.learned) === '[object Array]') {
+      progress.learned = stored.learned.filter(function (id) {
+        return !!Data.BY_ID[id];
+      });
+    }
+  }
+
+  /* ---------------- 分享挑战 ---------------- */
+
+  var challenge = null;
+  var lastQuery = '';
+
+  function applyQuery(q) {
+    if (!q) return false;
+    var n = parseInt(q.lv, 10);
+    if (!(n >= 1 && n <= LEVEL_COUNT)) return false;
+    var s = parseInt(q.step, 10);
+    s = s >= 1 && s <= 200 ? s : 0;
+    var key = n + ':' + s;
+    if (key === lastQuery) return false;
+    lastQuery = key;
+    challenge = { level: n - 1, step: s, done: false, mine: 0 };
+    progress.unlocked = Math.max(progress.unlocked, n);
+    saveProgress();
+    return true;
+  }
+
+  function readLaunch() {
+    if (!isWx || !wx.getLaunchOptionsSync) return;
+    try {
+      applyQuery(wx.getLaunchOptionsSync().query);
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function watchShow() {
+    if (!isWx || !wx.onShow) return;
+    try {
+      wx.onShow(function (res) {
+        if (applyQuery(res && res.query)) goHome();
+      });
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function shareChallenge(full) {
+    if (!isWx || !wx.shareAppMessage) {
+      showToast('微信内才能分享');
+      return;
+    }
+    var lv = levelConfig();
+    var used = state.steps || 1;
+    var title = full
+      ? '甲骨消消乐 · 我已十契圆满，识得三十字，来闯「' + lv.title + '」？'
+      : '甲骨消消乐 · 我在「' + lv.title + ' · ' + Data.char(lv.char).kai
+        + '」用了 ' + used + ' 步成文，敢来挑战？';
+    try {
+      wx.shareAppMessage({
+        title: title,
+        query: 'lv=' + (state.levelIndex + 1) + '&step=' + used
+      });
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function recordChallenge() {
+    if (!challenge || challenge.done) return;
+    if (challenge.level !== state.levelIndex) return;
+    challenge.done = true;
+    challenge.mine = state.steps;
+  }
+
+  readLaunch();
+
+  /* ---------------- 状态 ---------------- */
+
+  var state = {
+    screen: 'start',
+    libraryTab: 'chars',
+    librarySel: null,
+    noteSel: null,
+    mode: progress.mode,
+    levelIndex: 0,
+    grid: null,
+    tiles: [],
+    moves: 0,
+    steps: 0,
+    score: 0,
+    maxMult: 1,
+    combo: 0,
+    streak: 0,
+    collected: {},
+    pulse: {},
+    selected: -1,
+    phase: 'idle',
+    timer: 0,
+    swapA: -1,
+    swapB: -1,
+    pops: [],
+    comboText: null,
+    toast: null,
+    hint: null,
+    idleTime: 0,
+    time: 0,
+    cardT: 0,
+    result: null,
+    quiz: null,
+    particles: [],
+    rings: [],
+    shake: 0,
+    flash: 0,
+    milestone: null,
+    milestoneIdx: 0,
+    milestoneMarks: []
+  };
+
+  var ui = {
+    restart: null,
+    primary: null,
+    secondary: null,
+    share: null,
+    modeKid: null,
+    modeAdult: null,
+    optA: null,
+    optB: null,
+    library: null,
+    close: null,
+    tabChars: null,
+    tabVerses: null,
+    tabNotes: null,
+    libraryClose: null,
+    libraryCells: null,
+    verseCells: null,
+    noteCells: null,
+    noteClose: null
+  };
+
+  function levelConfig() {
+    return Data.LEVELS[state.levelIndex] || Data.LEVELS[0];
+  }
+
+  function levelPool() {
+    var lv = levelConfig();
+    var distinct = [];
+    var seen = {};
+    for (var i = 0; i < lv.pool.length && distinct.length < 6; i++) {
+      var t = Data.typeOf(lv.pool[i]);
+      if (t == null || seen[t]) continue;
+      seen[t] = 1;
+      distinct.push(t);
+    }
+    var allow = {};
+    for (var d = 0; d < distinct.length; d++) allow[distinct[d]] = 1;
+    var pool = [];
+    for (var j = 0; j < lv.pool.length; j++) {
+      var v = Data.typeOf(lv.pool[j]);
+      if (v != null && allow[v]) pool.push(v);
+    }
+    return pool.length ? pool : null;
+  }
+
+  function overallProgress() {
+    var lv = levelConfig();
+    var got = 0, all = 0;
+    for (var i = 0; i < lv.req.length; i++) {
+      var req = lv.req[i];
+      got += Math.min(req.n, state.collected[req.id] || 0);
+      all += req.n;
+    }
+    return all ? got / all : 0;
+  }
+
+  function collectedTotal() {
+    var lv = levelConfig();
+    var got = 0;
+    for (var i = 0; i < lv.req.length; i++) {
+      var req = lv.req[i];
+      got += Math.min(req.n, state.collected[req.id] || 0);
+    }
+    return got;
+  }
+
+  function totalRequired() {
+    var lv = levelConfig();
+    var all = 0;
+    for (var i = 0; i < lv.req.length; i++) all += lv.req[i].n;
+    return all;
+  }
+
+  function milestoneThresholds() {
+    var all = totalRequired();
+    return [
+      Math.max(1, Math.round(all / 3)),
+      Math.max(2, Math.round(all * 2 / 3))
+    ];
+  }
+
+  function isComplete() {
+    var lv = levelConfig();
+    for (var i = 0; i < lv.req.length; i++) {
+      var req = lv.req[i];
+      if ((state.collected[req.id] || 0) < req.n) return false;
+    }
+    return true;
+  }
+
+  /* ---------------- 关卡流程 ---------------- */
+
+  function makeTile(type, r, c) {
+    var p = tileCenter(r, c);
+    return {
+      type: type, r: r, c: c,
+      px: p.x, py: p.y,
+      scale: 1, alpha: 1,
+      clearing: false, clearT: 0,
+      spirit: null
+    };
+  }
+
+  function buildTiles(grid) {
+    state.grid = grid;
+    state.tiles = new Array(SIZE * SIZE);
+    for (var r = 0; r < SIZE; r++) {
+      for (var c = 0; c < SIZE; c++) {
+        var i = r * SIZE + c;
+        state.tiles[i] = makeTile(grid[i], r, c);
+      }
+    }
+  }
+
+  var spiritBag = [];
+
+  function spiritPool() {
+    var lv = levelConfig();
+    var ids = [];
+    function add(id) {
+      if (Data.BY_ID[id] && ids.indexOf(id) < 0) ids.push(id);
+    }
+    var base = lv.spirit || [];
+    for (var i = 0; i < base.length; i++) add(base[i]);
+    var pool = lv.pool || [];
+    for (var j = 0; j < pool.length; j++) add(pool[j]);
+    add(lv.char);
+    for (var k = 0; k < progress.learned.length; k++) add(progress.learned[k]);
+    return ids;
+  }
+
+  function randomSpirit() {
+    var lv = levelConfig();
+    if (!(lv.spirit && lv.spirit.length)) return null;
+    if (Math.random() > 0.11) return null;
+    if (!spiritBag.length) {
+      spiritBag = spiritPool();
+      for (var i = spiritBag.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = spiritBag[i];
+        spiritBag[i] = spiritBag[j];
+        spiritBag[j] = tmp;
+      }
+    }
+    return spiritBag.pop();
+  }
+
+  function startLevel(index) {
+    state.levelIndex = Math.max(0, Math.min(LEVEL_COUNT - 1, index));
+    var lv = levelConfig();
+    Sfx.play('start');
+
+    state.screen = 'play';
+    state.phase = 'idle';
+    state.timer = 0;
+    state.combo = 0;
+    state.streak = 0;
+    state.score = 0;
+    state.maxMult = 1;
+    state.selected = -1;
+    state.pops = [];
+    state.comboText = null;
+    state.toast = null;
+    state.hint = null;
+    state.idleTime = 0;
+    state.cardT = 0;
+    state.quiz = null;
+    state.result = null;
+    state.collected = {};
+    state.pulse = {};
+    state.steps = 0;
+    state.particles = [];
+    state.rings = [];
+    state.shake = 0;
+    state.flash = 0;
+    state.milestone = null;
+    state.milestoneIdx = 0;
+    state.milestoneMarks = milestoneThresholds();
+    spiritBag = [];
+
+    for (var i = 0; i < lv.req.length; i++) {
+      state.collected[lv.req[i].id] = 0;
+      state.pulse[lv.req[i].id] = 0;
+    }
+    state.moves = lv.moves + 2 + (state.mode === 'kid' ? 4 : 0);
+
+    var pool = levelPool();
+    var grid = Core.createGrid(Math.random, pool);
+    var guard = 0;
+    while (!grid && guard < 4) {
+      grid = Core.createGrid(Math.random, pool);
+      guard++;
+    }
+    if (!grid) grid = Core.createGrid(Math.random);
+    buildTiles(grid);
+  }
+
+  function completeLevel() {
+    var ch = Data.char(levelConfig().char);
+    if (progress.learned.indexOf(ch.id) < 0) progress.learned.push(ch.id);
+    progress.unlocked = Math.max(progress.unlocked, Math.min(LEVEL_COUNT, state.levelIndex + 2));
+    saveProgress();
+  }
+
+  function advance() {
+    if (state.levelIndex >= LEVEL_COUNT - 1) {
+      state.screen = 'result';
+      state.result = 'all';
+      return;
+    }
+    startLevel(state.levelIndex + 1);
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    progress.mode = mode;
+    saveProgress();
+  }
+
+  function goHome() {
+    state.screen = 'start';
+    state.quiz = null;
+    state.result = null;
+    state.librarySel = null;
+    state.noteSel = null;
+    state.toast = null;
+  }
+
+  function openLibrary() {
+    state.screen = 'library';
+    state.libraryTab = 'chars';
+    state.librarySel = null;
+    state.noteSel = null;
+    state.toast = null;
+  }
+
+  var readingsCache = null;
+
+  function readings() {
+    if (readingsCache) return readingsCache;
+    readingsCache = [];
+    for (var i = 0; i < Data.LEVELS.length; i++) {
+      var ch = Data.char(Data.LEVELS[i].char);
+      if (ch && ch.bone) {
+        readingsCache.push({
+          id: ch.id,
+          kai: ch.kai,
+          meaning: ch.meaning,
+          text: ch.bone,
+          gloss: ch.gloss
+        });
+      }
+    }
+    return readingsCache;
+  }
+
+  function levelForChar(id) {
+    for (var i = 0; i < Data.LEVELS.length; i++) {
+      if (Data.LEVELS[i].char === id) return i;
+    }
+    return -1;
+  }
+
+  function noteOpen(note) {
+    return progress.learned.length >= note.need;
+  }
+
+  function notesUnlockedCount() {
+    var n = 0;
+    for (var i = 0; i < Data.NOTES.length; i++) {
+      if (noteOpen(Data.NOTES[i])) n++;
+    }
+    return n;
+  }
+
+  function noteById(id) {
+    for (var i = 0; i < Data.NOTES.length; i++) {
+      if (Data.NOTES[i].id === id) return Data.NOTES[i];
+    }
+    return null;
+  }
+
+  /* ---------------- 棋盘操作 ---------------- */
+
+  function doSwap(a, b) {
+    var tg = state.grid[a];
+    state.grid[a] = state.grid[b];
+    state.grid[b] = tg;
+
+    var tt = state.tiles[a];
+    state.tiles[a] = state.tiles[b];
+    state.tiles[b] = tt;
+
+    var ta = state.tiles[a];
+    var tb = state.tiles[b];
+    if (ta) { ta.r = Math.floor(a / SIZE); ta.c = a % SIZE; }
+    if (tb) { tb.r = Math.floor(b / SIZE); tb.c = b % SIZE; }
+    state.selected = -1;
+  }
+
+  function attemptSwap(a, b) {
+    if (state.screen !== 'play' || state.phase !== 'idle') return;
+    var ar = Math.floor(a / SIZE), ac = a % SIZE;
+    var br = Math.floor(b / SIZE), bc = b % SIZE;
+    if (Math.abs(ar - br) + Math.abs(ac - bc) !== 1) return;
+
+    doSwap(a, b);
+    Sfx.play('swap');
+    state.hint = null;
+    state.idleTime = 0;
+    state.swapA = a;
+    state.swapB = b;
+    state.phase = 'swap';
+    state.timer = 0;
+  }
+
+  function tapCell(index) {
+    if (state.screen !== 'play' || state.phase !== 'idle') return;
+    state.hint = null;
+    state.idleTime = 0;
+    Sfx.play('tap');
+
+    var tile = state.tiles[index];
+    if (tile && tile.spirit && state.selected === -1) {
+      openQuiz(index, tile.spirit);
+      return;
+    }
+
+    if (state.selected === -1) {
+      state.selected = index;
+      return;
+    }
+    if (state.selected === index) {
+      state.selected = -1;
+      return;
+    }
+
+    var a = state.selected;
+    var b = index;
+    var ar = Math.floor(a / SIZE), ac = a % SIZE;
+    var br = Math.floor(b / SIZE), bc = b % SIZE;
+    if (Math.abs(ar - br) + Math.abs(ac - bc) === 1) {
+      attemptSwap(a, b);
+    } else {
+      state.selected = index;
+    }
+  }
+
+  function collect(t) {
+    var lv = levelConfig();
+    for (var i = 0; i < lv.req.length; i++) {
+      var req = lv.req[i];
+      if (Data.typeOf(req.id) === t.type) {
+        var cur = state.collected[req.id] || 0;
+        if (cur < req.n) {
+          state.collected[req.id] = cur + 1;
+          state.pulse[req.id] = 1;
+        }
+      }
+    }
+    if (t.spirit) {
+      Sfx.play('spirit');
+      state.moves += 1;
+      var ch = Data.char(t.spirit);
+      showToast('字灵 · ' + ch.kai + '：' + ch.meaning + '　步数 +1');
+    }
+  }
+
+  function resolve(combo) {
+    var matched = Core.findMatches(state.grid);
+    if (matched.size === 0) {
+      finishTurn();
+      return;
+    }
+
+    state.phase = 'clear';
+    state.timer = 0;
+    state.combo = combo;
+    var mult = combo + Math.min(2, Math.max(0, (state.streak || 1) - 1));
+    state.maxMult = Math.max(state.maxMult || 1, mult);
+    Sfx.play('match', { combo: mult });
+
+    var sumX = 0, sumY = 0, count = 0;
+    matched.forEach(function (i) {
+      var t = state.tiles[i];
+      if (!t) return;
+      t.clearing = true;
+      t.clearT = 0;
+      t.spin = Math.random() < 0.5 ? -1 : 1;
+      state.grid[i] = -1;
+      collect(t);
+      var p = tileCenter(t.r, t.c);
+      sumX += p.x;
+      sumY += p.y;
+      count++;
+      spawnBurst(p.x, p.y, 4 + Math.min(6, mult), {
+        speed: 100 + mult * 18 + count * 3,
+        size: 3 + Math.min(1.4, mult * 0.25),
+        lift: 60
+      });
+    });
+
+    if (!count) return;
+
+    var cx = sumX / count, cy = sumY / count;
+    var gained = count * 10 * mult + (count > 3 ? (count - 3) * 15 * mult : 0);
+    state.score += gained;
+    state.pops.push({
+      x: cx,
+      y: cy,
+      text: '+' + gained,
+      t: 0,
+      size: 16 + Math.min(10, count * 1.4)
+    });
+    state.rings.push({
+      x: cx, y: cy, t: 0,
+      r: layout.board.cell * 0.22,
+      max: layout.board.cell * (0.85 + Math.min(1.1, count * 0.12)),
+      color: mult >= 3 ? '192,138,62' : '168,58,42'
+    });
+    spawnBurst(cx, cy, mult >= 3 ? 18 : 9, {
+      speed: 165 + mult * 26,
+      size: 3.4,
+      color: '#C08A3E',
+      spark: true,
+      lift: 30
+    });
+    state.shake = Math.max(state.shake, Math.min(7, 1.6 + mult * 1.1 + (count - 3) * 0.25));
+    if (mult >= 4) state.flash = Math.max(state.flash, 0.55);
+    if (mult >= 2) {
+      state.comboText = { text: '连击 ×' + mult, t: 0 };
+    }
+    checkMilestones();
+    vibrate();
+  }
+
+  function removeCleared() {
+    for (var i = 0; i < state.tiles.length; i++) {
+      if (state.tiles[i] && state.tiles[i].clearing) {
+        state.tiles[i] = null;
+        state.grid[i] = -1;
+      }
+    }
+  }
+
+  function cascadeType(r, c) {
+    if (Math.random() > 0.28) return null;
+    var l1 = c >= 1 ? state.tiles[r * SIZE + c - 1] : null;
+    var l2 = c >= 2 ? state.tiles[r * SIZE + c - 2] : null;
+    if (l1 && l2 && l1.type === l2.type) return l1.type;
+    var d1 = r + 1 < SIZE ? state.tiles[(r + 1) * SIZE + c] : null;
+    var d2 = r + 2 < SIZE ? state.tiles[(r + 2) * SIZE + c] : null;
+    if (d1 && d2 && d1.type === d2.type) return d1.type;
+    return null;
+  }
+
+  function applyGravity() {
+    var cell = layout.board.cell;
+    var pad = layout.board.pad;
+    var b = layout.board;
+    var pool = levelPool();
+
+    for (var c = 0; c < SIZE; c++) {
+      var write = SIZE - 1;
+      for (var r = SIZE - 1; r >= 0; r--) {
+        var i = r * SIZE + c;
+        var t = state.tiles[i];
+        if (!t) continue;
+        var j = write * SIZE + c;
+        if (j !== i) {
+          state.tiles[j] = t;
+          state.tiles[i] = null;
+          t.r = write;
+          t.c = c;
+          state.grid[j] = t.type;
+          state.grid[i] = -1;
+        }
+        write--;
+      }
+
+      var missing = write + 1;
+      for (var r2 = write; r2 >= 0; r2--) {
+        var type;
+        var spirit = randomSpirit();
+        if (spirit) {
+          type = Data.typeOf(spirit);
+        } else if ((type = cascadeType(r2, c)) != null) {
+          /* 偶尔补出可消的棋子，让连锁更常发生 */
+        } else if (pool) {
+          type = pool[Math.floor(Math.random() * pool.length)];
+        } else {
+          type = Math.floor(Math.random() * Core.TYPES);
+        }
+        var nt = makeTile(type, r2, c);
+        nt.spirit = spirit;
+        nt.px = b.x + pad + c * cell + cell / 2;
+        nt.py = b.y + pad + (r2 - missing) * cell + cell / 2;
+        var j2 = r2 * SIZE + c;
+        state.tiles[j2] = nt;
+        state.grid[j2] = type;
+      }
+    }
+  }
+
+  function reshuffle() {
+    var pool = levelPool();
+    var grid = Core.createGrid(Math.random, pool);
+    var guard = 0;
+    while (!grid && guard < 4) {
+      grid = Core.createGrid(Math.random, pool);
+      guard++;
+    }
+    if (!grid) grid = Core.createGrid(Math.random);
+    buildTiles(grid);
+    showToast('无可用步，重排甲骨');
+  }
+
+  function finishTurn() {
+    state.phase = 'idle';
+    state.timer = 0;
+    state.combo = 0;
+    state.selected = -1;
+    state.hint = null;
+    state.idleTime = 0;
+
+    if (isComplete()) {
+      completeLevel();
+      recordChallenge();
+      Sfx.play('win');
+      state.screen = 'card';
+      state.cardT = 0;
+      vibrate();
+      return;
+    }
+
+    if (state.moves <= 0) {
+      Sfx.play('fail');
+      state.screen = 'result';
+      state.result = 'fail';
+      return;
+    }
+
+    if (!Core.findPossibleMove(state.grid)) {
+      reshuffle();
+    }
+  }
+
+  function vibrate() {
+    try {
+      if (isWx) {
+        if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
+      } else if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(8);
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function showToast(str) {
+    state.toast = { text: str, t: 0 };
+  }
+
+  function spawnBurst(x, y, n, opts) {
+    opts = opts || {};
+    if (state.particles.length > 220) return;
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = (opts.speed || 120) * (0.45 + Math.random() * 0.9);
+      state.particles.push({
+        x: x + (Math.random() - 0.5) * layout.board.cell * 0.3,
+        y: y + (Math.random() - 0.5) * layout.board.cell * 0.3,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - (opts.lift || 40),
+        size: (opts.size || 2.6) * (0.6 + Math.random() * 0.8),
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 14,
+        life: 0.42 + Math.random() * 0.38,
+        t: 0,
+        spark: !!opts.spark,
+        color: opts.color || '#3B2C1E'
+      });
+    }
+  }
+
+  function checkMilestones() {
+    if (!state.milestoneMarks.length) return;
+    var total = collectedTotal();
+    while (state.milestoneIdx < state.milestoneMarks.length &&
+      total >= state.milestoneMarks[state.milestoneIdx]) {
+      state.milestoneIdx++;
+      state.moves += 1;
+      var p = layout.panel;
+      var bx = p.x + 41, by = p.y + p.h / 2;
+      spawnBurst(bx, by, 18, {
+        speed: 165, size: 2.8, color: '#C08A3E', spark: true, lift: 20
+      });
+      state.rings.push({
+        x: bx, y: by, t: 0, r: 10, max: 62, color: '192,138,62'
+      });
+      state.milestone = {
+        t: 0,
+        done: state.milestoneIdx,
+        got: total,
+        all: totalRequired()
+      };
+      state.flash = Math.max(state.flash, 0.45);
+      Sfx.play('milestone');
+      vibrate();
+    }
+  }
+
+  /* ---------------- 字灵考校 ---------------- */
+
+  function openQuiz(index, charId) {
+    var ch = Data.char(charId);
+    var other = null;
+    var guard = 0;
+    do {
+      other = Data.CHARS[Math.floor(Math.random() * Data.CHARS.length)];
+      guard++;
+    } while (guard < 40 && (other.id === ch.id || other.meaning === ch.meaning));
+
+    var options = [
+      { text: ch.meaning, ok: true },
+      { text: other.meaning, ok: false }
+    ];
+    if (Math.random() < 0.5) options.reverse();
+
+    state.quiz = { charId: charId, tileIndex: index, options: options, t: 0 };
+    state.screen = 'quiz';
+    state.selected = -1;
+  }
+
+  function answerQuiz(ok) {
+    var q = state.quiz;
+    if (!q) return;
+    if (ok) {
+      Sfx.play('right');
+      var t = state.tiles[q.tileIndex];
+      if (t) t.spirit = null;
+      var add = state.mode === 'kid' ? 3 : 2;
+      state.moves += add;
+      showToast('答对 · 步数 +' + add);
+    } else {
+      Sfx.play('wrong');
+      showToast(state.mode === 'kid' ? '再想想，它就藏在字形里' : '未合，重观其形');
+    }
+    state.quiz = null;
+    state.screen = 'play';
+  }
+
+  /* ---------------- 更新 ---------------- */
+
+  function update(dt) {
+    state.time += dt;
+
+    for (var i = state.particles.length - 1; i >= 0; i--) {
+      var pt = state.particles[i];
+      pt.t += dt;
+      if (pt.t >= pt.life) { state.particles.splice(i, 1); continue; }
+      pt.vy += 520 * dt;
+      pt.x += pt.vx * dt;
+      pt.y += pt.vy * dt;
+      pt.rot += pt.vr * dt;
+    }
+    for (var ri = state.rings.length - 1; ri >= 0; ri--) {
+      state.rings[ri].t += dt;
+      if (state.rings[ri].t > 0.5) state.rings.splice(ri, 1);
+    }
+    if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 22);
+    if (state.flash > 0) state.flash = Math.max(0, state.flash - dt * 2.6);
+    if (state.milestone) {
+      state.milestone.t += dt;
+      if (state.milestone.t > 1.55) state.milestone = null;
+    }
+
+    for (var key in state.pulse) {
+      if (state.pulse[key] > 0) state.pulse[key] = Math.max(0, state.pulse[key] - dt * 2.8);
+    }
+
+    for (var p = state.pops.length - 1; p >= 0; p--) {
+      state.pops[p].t += dt;
+      if (state.pops[p].t > 0.9) state.pops.splice(p, 1);
+    }
+    if (state.comboText) {
+      state.comboText.t += dt;
+      if (state.comboText.t > 1.1) state.comboText = null;
+    }
+    if (state.toast) {
+      state.toast.t += dt;
+      if (state.toast.t > 1.9) state.toast = null;
+    }
+    if (state.screen === 'card') state.cardT += dt;
+    if (state.screen === 'quiz' && state.quiz) state.quiz.t += dt;
+
+    if (state.grid && state.screen === 'play') {
+      var k = 1 - Math.exp(-20 * dt);
+      for (var n = 0; n < state.tiles.length; n++) {
+        var t = state.tiles[n];
+        if (!t) continue;
+        var target = tileCenter(t.r, t.c);
+        t.px += (target.x - t.px) * k;
+        t.py += (target.y - t.py) * k;
+        if (t.clearing) {
+          t.clearT += dt;
+          var q = Math.min(1, t.clearT / 0.22);
+          var punch = Math.sin(Math.min(1, q / 0.32) * Math.PI * 0.5);
+          t.scale = 1 + 0.34 * punch - 0.98 * q * q;
+          t.alpha = 1 - q * q * q;
+          t.rot = (t.spin || 1) * q * 0.5;
+        } else if (t.scale !== 1 || t.alpha !== 1 || t.rot) {
+          t.scale = 1;
+          t.alpha = 1;
+          t.rot = 0;
+        }
+      }
+    }
+
+    if (state.screen !== 'play') return;
+
+    if (state.phase === 'swap') {
+      state.timer += dt;
+      if (state.timer >= 0.14) {
+        if (Core.findMatches(state.grid).size === 0) {
+          doSwap(state.swapA, state.swapB);
+          Sfx.play('bad');
+          state.streak = 0;
+          state.phase = 'revert';
+          state.timer = 0;
+        } else {
+          state.moves--;
+          state.steps++;
+          state.streak = Math.min(9, (state.streak || 0) + 1);
+          resolve(1);
+        }
+      }
+    } else if (state.phase === 'revert') {
+      state.timer += dt;
+      if (state.timer >= 0.14) {
+        state.phase = 'idle';
+        state.timer = 0;
+      }
+    } else if (state.phase === 'clear') {
+      state.timer += dt;
+      if (state.timer >= 0.22) {
+        removeCleared();
+        applyGravity();
+        state.phase = 'fall';
+        state.timer = 0;
+      }
+    } else if (state.phase === 'fall') {
+      state.timer += dt;
+      if (state.timer >= 0.22) {
+        if (Core.findMatches(state.grid).size > 0) {
+          resolve(state.combo + 1);
+        } else {
+          finishTurn();
+        }
+      }
+    }
+
+    if (state.phase === 'idle') {
+      state.idleTime += dt;
+      var hintDelay = state.mode === 'kid' ? 5 : 8.5;
+      if (state.idleTime > hintDelay && !state.hint) {
+        var mv = Core.findPossibleMove(state.grid);
+        if (mv) state.hint = { a: mv[0], b: mv[1] };
+      }
+    } else {
+      state.idleTime = 0;
+    }
+  }
+
+  /* ---------------- 绘制工具 ---------------- */
+
+  function rr(x, y, w, h, r) {
+    var rad = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  }
+
+  function setFont(size, weight) {
+    ctx.font = (weight ? weight + ' ' : '') + size +
+      'px "Noto Serif SC","Source Han Serif SC","Songti SC","STSong","Noto Serif CJK SC","SimSun",serif';
+  }
+
+  function text(str, x, y, size, color, align, baseline, weight) {
+    setFont(size, weight);
+    ctx.fillStyle = color;
+    ctx.textAlign = align || 'left';
+    ctx.textBaseline = baseline || 'alphabetic';
+    ctx.fillText(str, x, y);
+  }
+
+  var NO_LINE_START = '。，、；：！？）】」』”’…·';
+
+  function wrap(str, maxW, size) {
+    setFont(size);
+    var lines = [];
+    var cur = '';
+    for (var i = 0; i < str.length; i++) {
+      var ch = str.charAt(i);
+      var overflow = cur && ctx.measureText(cur + ch).width > maxW;
+      if (overflow && NO_LINE_START.indexOf(ch) < 0) {
+        lines.push(cur);
+        cur = ch;
+      } else {
+        cur += ch;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function drawLines(lines, cx, y, lh, size, color, align) {
+    for (var i = 0; i < lines.length; i++) {
+      text(lines[i], cx, y + i * lh, size, color, align || 'center', 'middle');
+    }
+  }
+
+  /* ---------------- 绘制 ---------------- */
+
+  function drawBackground() {
+    var g = ctx.createLinearGradient(0, 0, 0, viewH);
+    g.addColorStop(0, C.bgTop);
+    g.addColorStop(0.55, C.bgMid);
+    g.addColorStop(1, C.bgBottom);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(140,106,63,0.05)';
+    ctx.beginPath();
+    ctx.arc(viewW * 0.92, viewH * 0.06, viewW * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(140,106,63,0.04)';
+    ctx.beginPath();
+    ctx.arc(viewW * 0.04, viewH * 0.94, viewW * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHeader() {
+    var l = layout;
+
+    setFont(19, 'bold');
+    var titleW = ctx.measureText('甲骨消消乐').width;
+    text('甲骨消消乐', l.x, l.top + 15, 19, C.ink, 'left', 'middle', 'bold');
+
+    var sx = l.x + titleW + 8;
+    var sy = l.top + 3;
+    ctx.save();
+    ctx.shadowColor = 'rgba(168,58,42,0.32)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    rr(sx, sy, 22, 22, 4);
+    ctx.fillStyle = C.red;
+    ctx.fill();
+    ctx.restore();
+    text('契', sx + 11, sy + 12, 13, '#F7EBD6', 'center', 'middle', 'bold');
+
+    if (state.screen === 'play') {
+      var rw = 50, rh = 24;
+      var rx = l.x + l.contentW - rw;
+      var ry = l.top + 3;
+
+      var mw = 24;
+      var mx = rx - mw - 8;
+      rr(mx, ry, mw, rh, 12);
+      ctx.fillStyle = 'rgba(255,250,238,0.5)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(140,106,63,0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      text(Sfx.isMuted() ? '静' : '音', mx + mw / 2, ry + rh / 2 + 0.5, 11,
+        Sfx.isMuted() ? C.inkFaint : C.inkSoft, 'center', 'middle');
+      ui.sound = { x: mx - 4, y: ry - 4, w: mw + 8, h: rh + 8 };
+
+      rr(rx, ry, rw, rh, 12);
+      ctx.fillStyle = 'rgba(255,250,238,0.5)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(140,106,63,0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      text('重开', rx + rw / 2, ry + rh / 2 + 0.5, 11.5, C.inkSoft, 'center', 'middle');
+      ui.restart = { x: rx - 6, y: ry - 6, w: rw + 12, h: rh + 12 };
+    } else {
+      ui.restart = null;
+      ui.sound = null;
+    }
+  }
+
+  function drawTargetPanel() {
+    var p = layout.panel;
+    var lv = levelConfig();
+    var ch = Data.char(lv.char);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(92,62,30,0.10)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    rr(p.x, p.y, p.w, p.h, 14);
+    ctx.fillStyle = 'rgba(255,251,242,0.66)';
+    ctx.fill();
+    ctx.restore();
+
+    rr(p.x, p.y, p.w, p.h, 14);
+    ctx.strokeStyle = 'rgba(158,126,82,0.26)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    var box = 58;
+    var bx = p.x + 12;
+    var by = p.y + (p.h - box) / 2;
+    var cx = bx + box / 2;
+    var cy = by + box / 2;
+
+    rr(bx, by, box, box, 10);
+    ctx.fillStyle = 'rgba(250,242,226,0.92)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(180,145,78,0.38)';
+    ctx.stroke();
+
+    var prog = overallProgress();
+    ctx.beginPath();
+    ctx.arc(cx, cy, box / 2 + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(158,126,82,0.16)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    if (prog > 0.001) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, box / 2 + 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * prog);
+      ctx.strokeStyle = C.red;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+
+    for (var mi = 1; mi <= 2; mi++) {
+      var ang = -Math.PI / 2 + Math.PI * 2 * (mi / 3);
+      var dx = cx + Math.cos(ang) * (box / 2 + 6);
+      var dy = cy + Math.sin(ang) * (box / 2 + 6);
+      var marked = state.milestoneIdx >= mi;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 3.4, 0, Math.PI * 2);
+      ctx.fillStyle = marked ? C.red : C.cream;
+      ctx.fill();
+      ctx.strokeStyle = marked ? C.red : 'rgba(158,126,82,0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    Glyphs.drawById(ctx, ch.glyph, cx, cy, box * 0.6, Math.max(1.6, box * 0.058), C.ink, true);
+
+    var rx = bx + box + 14;
+    text(lv.title + ' · 造「' + ch.kai + '」', rx, p.y + 18, 11.5, C.inkSoft, 'left', 'middle');
+    text(ch.meaning, rx, p.y + 37, 15.5, C.ink, 'left', 'middle', 'bold');
+
+    var reqs = lv.req;
+    var maxChips = reqs.length > 1 ? 2 : 1;
+    for (var i = 0; i < maxChips; i++) {
+      var req = reqs[i];
+      if (!req) break;
+      var rc = Data.char(req.id);
+      var chipX = rx + i * 76;
+      var chipY = p.y + 56;
+
+      var pl = state.pulse[req.id] || 0;
+      Glyphs.drawById(ctx, rc.glyph, chipX + 8, chipY + 2, 15, 1.6,
+        pl > 0.05 ? C.red : C.ink, true);
+
+      var got = Math.min(req.n, state.collected[req.id] || 0);
+      text(got + '/' + req.n, chipX + 20, chipY + 3, 11.5,
+        got >= req.n ? C.red : C.inkSoft, 'left', 'middle', got >= req.n ? 'bold' : null);
+
+      var bw = 62;
+      rr(chipX, chipY + 13, bw, 4, 2);
+      ctx.fillStyle = 'rgba(140,106,63,0.16)';
+      ctx.fill();
+      if (got > 0) {
+        rr(chipX, chipY + 13, Math.max(4, bw * got / req.n), 4, 2);
+        ctx.fillStyle = C.red;
+        ctx.fill();
+      }
+    }
+
+    var mx = p.x + p.w - 30;
+    text(String(state.moves), mx, p.y + 34, 22,
+      state.moves <= 4 ? C.red : C.ink, 'center', 'middle', 'bold');
+    text('步', mx, p.y + 56, 9.5, C.inkSoft, 'center', 'middle');
+  }
+
+  function drawBoardPanel() {
+    var b = layout.board;
+    var pad = b.pad;
+    var cell = b.cell;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(92,62,30,0.18)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 8;
+    rr(b.x, b.y, b.size, b.size, 16);
+    ctx.fillStyle = C.panel;
+    ctx.fill();
+    ctx.restore();
+
+    var g = ctx.createLinearGradient(0, b.y, 0, b.y + b.size);
+    g.addColorStop(0, 'rgba(255,250,238,0.4)');
+    g.addColorStop(1, 'rgba(191,163,117,0.18)');
+    rr(b.x, b.y, b.size, b.size, 16);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    rr(b.x + 0.5, b.y + 0.5, b.size - 1, b.size - 1, 16);
+    ctx.strokeStyle = 'rgba(150,118,74,0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,94,58,0.07)';
+    ctx.lineWidth = 1;
+    for (var i = 1; i < SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(b.x + pad + i * cell, b.y + pad);
+      ctx.lineTo(b.x + pad + i * cell, b.y + pad + cell * SIZE);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(b.x + pad, b.y + pad + i * cell);
+      ctx.lineTo(b.x + pad + cell * SIZE, b.y + pad + i * cell);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawTile(t, index) {
+    var cell = layout.board.cell;
+    var size = cell - 5;
+    var isSelected = state.selected === index && !t.clearing;
+    var hint = state.hint;
+    var isHint = !!hint && (hint.a === index || hint.b === index) && !t.clearing;
+    var scale = (t.scale == null ? 1 : t.scale);
+    if (isSelected) scale *= 1 + 0.03 * Math.sin(state.time * 7);
+
+    var ch = Data.CHARS[t.type] || Data.CHARS[0];
+    var spirit = t.spirit ? Data.char(t.spirit) : null;
+
+    ctx.save();
+    ctx.translate(t.px, t.py);
+    if (t.rot) ctx.rotate(t.rot);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = t.alpha == null ? 1 : t.alpha;
+
+    if (isSelected) {
+      ctx.shadowColor = 'rgba(168,58,42,0.35)';
+      ctx.shadowBlur = 10;
+    }
+    rr(-size / 2, -size / 2, size, size, size * 0.26);
+    ctx.fillStyle = t.clearing ? C.red : (spirit ? '#FAEFD2' : C.tile);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = t.clearing
+      ? 'rgba(140,44,32,0.9)'
+      : (spirit ? 'rgba(180,145,78,0.85)' : C.tileBorder);
+    ctx.stroke();
+
+    if (isSelected) {
+      rr(-size / 2 - 1, -size / 2 - 1, size + 2, size + 2, size * 0.28);
+      ctx.strokeStyle = C.red;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    if (isHint) {
+      var pulse = 0.5 + 0.5 * Math.sin(state.time * 5);
+      ctx.save();
+      ctx.shadowColor = 'rgba(168,58,42,0.55)';
+      ctx.shadowBlur = 6 + 8 * pulse;
+      rr(-size / 2 - 1, -size / 2 - 1, size + 2, size + 2, size * 0.28);
+      ctx.strokeStyle = 'rgba(168,58,42,' + (0.25 + 0.4 * pulse).toFixed(3) + ')';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    var glyphId = spirit ? spirit.glyph : ch.glyph;
+    Glyphs.drawById(
+      ctx, glyphId, 0, 0, size * 0.7,
+      Math.max(1.7, size * 0.078),
+      t.clearing ? C.cream : (spirit ? '#8A5A20' : C.ink),
+      true
+    );
+
+    if (spirit && !t.clearing) {
+      ctx.beginPath();
+      ctx.arc(size * 0.32, -size * 0.32, Math.max(2, size * 0.06), 0, Math.PI * 2);
+      ctx.fillStyle = C.red;
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawTiles() {
+    var pass, i, t;
+    for (pass = 0; pass < 2; pass++) {
+      for (i = 0; i < state.tiles.length; i++) {
+        t = state.tiles[i];
+        if (!t) continue;
+        if (pass === 0 && t.clearing) continue;
+        if (pass === 1 && !t.clearing) continue;
+        drawTile(t, i);
+      }
+    }
+  }
+
+  function drawPops() {
+    for (var i = 0; i < state.pops.length; i++) {
+      var pop = state.pops[i];
+      var alpha = Math.max(0, 1 - pop.t / 0.9);
+      var size = (pop.size || 17) + pop.t * 5;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      setFont(size, 'bold');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      var y = pop.y - 14 - pop.t * 36;
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = 'rgba(251,243,226,0.85)';
+      ctx.strokeText(pop.text, pop.x, y);
+      ctx.fillStyle = C.red;
+      ctx.fillText(pop.text, pop.x, y);
+      ctx.restore();
+    }
+  }
+
+  function drawParticles() {
+    var list = state.particles;
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      var k = p.t / p.life;
+      var alpha = k < 0.65 ? 1 : Math.max(0, 1 - (k - 0.65) / 0.35);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      if (p.spark) {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = Math.max(1.4, p.size * 0.72);
+        ctx.lineCap = 'round';
+        var len = p.size * 3.2;
+        ctx.beginPath();
+        ctx.moveTo(-len / 2, 0);
+        ctx.lineTo(len / 2, 0);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+      } else {
+        ctx.fillStyle = p.color;
+        rr(-p.size / 2, -p.size / 2, p.size, p.size * 0.7, p.size * 0.24);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawRings() {
+    for (var i = 0; i < state.rings.length; i++) {
+      var rg = state.rings[i];
+      var k = Math.min(1, rg.t / 0.5);
+      var ease = 1 - Math.pow(1 - k, 3);
+      var r = rg.r + (rg.max - rg.r) * ease;
+      ctx.beginPath();
+      ctx.arc(rg.x, rg.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(' + rg.color + ',' + (0.8 * (1 - k)).toFixed(3) + ')';
+      ctx.lineWidth = 4 * (1 - k) + 0.8;
+      ctx.stroke();
+    }
+  }
+
+  function drawMilestone() {
+    var m = state.milestone;
+    if (!m) return;
+    var appear = Math.min(1, m.t / 0.2);
+    var fade = m.t > 1.15 ? Math.max(0, 1 - (m.t - 1.15) / 0.4) : 1;
+    var ease = 1 - Math.pow(1 - appear, 3);
+    var scale = 0.88 + 0.12 * ease + 0.025 * Math.sin(m.t * 9) * Math.max(0, 1 - m.t * 1.6);
+    var bx = layout.board.x + layout.board.size / 2;
+    var by = layout.board.y + layout.board.size * 0.34;
+    var w = Math.min(248, layout.board.size - 36), h = 62;
+
+    ctx.save();
+    ctx.globalAlpha = ease * fade;
+    ctx.translate(bx, by);
+    ctx.scale(scale, scale);
+
+    ctx.shadowColor = 'rgba(120,70,30,0.28)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 5;
+    rr(-w / 2, -h / 2, w, h, 13);
+    ctx.fillStyle = 'rgba(253,246,232,0.97)';
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = 'rgba(168,58,42,0.55)';
+    ctx.lineWidth = 1.4;
+    rr(-w / 2, -h / 2, w, h, 13);
+    ctx.stroke();
+
+    drawSeal(-w / 2 + 30, 0, 36, '成');
+    text('部件已集 ' + m.done + ' / 3', -w / 2 + 56, -9, 13.5, C.ink, 'left', 'middle', 'bold');
+    text('步数 +1 · 已集 ' + m.got + '/' + m.all, -w / 2 + 56, 11, 9.5, C.inkSoft, 'left', 'middle');
+    ctx.restore();
+  }
+
+  function drawCombo() {
+    if (!state.comboText) return;
+    var c = state.comboText;
+    var alpha = Math.max(0, 1 - c.t / 1.1);
+    var scale = 1 + Math.min(0.3, c.t * 1.4);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(viewW / 2, layout.board.y + 34);
+    ctx.scale(scale, scale);
+    setFont(21, 'bold');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(251,243,226,0.92)';
+    ctx.strokeText(c.text, 0, 0);
+    ctx.fillStyle = C.red;
+    ctx.fillText(c.text, 0, 0);
+    ctx.restore();
+  }
+
+  function drawToast() {
+    if (!state.toast) return;
+    var t = state.toast;
+    var alpha = t.t < 0.2 ? t.t / 0.2 : Math.max(0, 1 - (t.t - 1.4) / 0.5);
+    var w = Math.min(layout.contentW - 20, 280), h = 34;
+    var x = viewW / 2 - w / 2;
+    var y = layout.board.y + layout.board.size - 50;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    rr(x, y, w, h, 17);
+    ctx.fillStyle = 'rgba(51,41,31,0.84)';
+    ctx.fill();
+    setFont(11.5);
+    ctx.fillStyle = C.cream;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t.text, viewW / 2, y + h / 2 + 0.5, w - 20);
+    ctx.restore();
+  }
+
+  function drawFooter() {
+    var lv = levelConfig();
+    var tip = state.mode === 'kid'
+      ? '交换相邻甲骨 · 集齐部件，字就刻成了'
+      : '三枚同形即消 · 集齐部件以成字';
+    if (state.screen === 'play' && layout.footerY + 10 < viewH) {
+      text(tip, viewW / 2, layout.footerY + 8, 10, 'rgba(90,74,52,0.5)', 'center', 'middle');
+    }
+  }
+
+  function drawCard(x, y, w, h) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(60,40,20,0.38)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetY = 12;
+    rr(x, y, w, h, 18);
+    ctx.fillStyle = '#FBF3E0';
+    ctx.fill();
+    ctx.restore();
+
+    rr(x, y, w, h, 18);
+    ctx.strokeStyle = 'rgba(180,145,78,0.65)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    rr(x + 7, y + 7, w - 14, h - 14, 13);
+    ctx.strokeStyle = 'rgba(168,58,42,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawOrnament(cx, y) {
+    ctx.strokeStyle = 'rgba(180,145,78,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 46, y);
+    ctx.lineTo(cx - 10, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, y);
+    ctx.lineTo(cx + 46, y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 4);
+    ctx.lineTo(cx + 4, y);
+    ctx.lineTo(cx, y + 4);
+    ctx.lineTo(cx - 4, y);
+    ctx.closePath();
+    ctx.fillStyle = C.gold;
+    ctx.fill();
+  }
+
+  function drawButton(rect, label, opts) {
+    opts = opts || {};
+    var fill = opts.ghost ? 'rgba(255,250,238,0.7)' : C.red;
+    var color = opts.ghost ? C.inkSoft : C.cream;
+    var x = rect.x, y = rect.y, w = rect.w, h = rect.h;
+
+    if (!opts.ghost) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(150,50,35,0.28)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      rr(x, y, w, h, h / 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.restore();
+    } else {
+      rr(x, y, w, h, h / 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(140,106,63,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    text(label, x + w / 2, y + h / 2 + 1, opts.size || 15, color, 'center', 'middle', 'bold');
+  }
+
+  /* ---------------- 弹层：开始 ---------------- */
+
+  function drawStart() {
+    var cx = viewW / 2;
+    var w = Math.min(layout.contentW - 8, 332);
+    var h = 452;
+    var x = cx - w / 2;
+    var y = Math.max(safeTop + 12, viewH / 2 - h / 2);
+
+    drawCard(x, y, w, h);
+    drawOrnament(cx, y + 38);
+
+    text('甲骨消消乐', cx, y + 68, 26, C.ink, 'center', 'middle', 'bold');
+    text('契于龟甲 · 消而成文', cx, y + 94, 11.5, C.inkSoft, 'center', 'middle');
+
+    var sample = ['ri', 'yue', 'shan', 'shui', 'mu', 'huo', 'ren', 'da'];
+    var step = 34;
+    var startX = cx - step * (sample.length - 1) / 2;
+    for (var i = 0; i < sample.length; i++) {
+      var ch = Data.char(sample[i]);
+      Glyphs.drawById(ctx, ch.glyph, startX + step * i, y + 128, 22, 1.8, C.ink, true);
+      text(ch.kai, startX + step * i, y + 147, 9.5, C.inkFaint, 'center', 'middle');
+    }
+
+    var pillW = 96, pillH = 34, gap = 12;
+    var totalW = pillW * 2 + gap;
+    var px0 = cx - totalW / 2;
+    var py0 = y + 170;
+
+    ui.modeKid = { x: px0, y: py0, w: pillW, h: pillH };
+    ui.modeAdult = { x: px0 + pillW + gap, y: py0, w: pillW, h: pillH };
+
+    drawModePill(ui.modeKid, '童蒙', state.mode === 'kid');
+    drawModePill(ui.modeAdult, '雅士', state.mode === 'adult');
+
+    var desc = wrap(MODE_DESC[state.mode], w - 64, 11);
+    drawLines(desc, cx, y + 226, 18, 11, 'rgba(58,45,30,0.66)');
+
+    var learned = progress.learned.length;
+    var inviting = !!challenge && !challenge.done;
+    if (inviting) {
+      var clv = Data.LEVELS[challenge.level];
+      var cch = Data.char(clv.char);
+      var invite = challenge.step
+        ? '好友在「' + clv.title + ' · ' + cch.kai + '」用 ' + challenge.step + ' 步成文'
+        : '好友邀你共契「' + clv.title + ' · ' + cch.kai + '」';
+      text(invite, cx, y + 288, 11, C.gold, 'center', 'middle', 'bold');
+      text('已识 ' + learned + ' 字 · 已开 ' + progress.unlocked + ' 契', cx, y + 308, 10,
+        'rgba(90,74,52,0.5)', 'center', 'middle');
+    } else {
+      text('已识 ' + learned + ' 字 · 已开 ' + progress.unlocked + ' 契',
+        cx, y + 292, 11, C.gold, 'center', 'middle', 'bold');
+    }
+
+    var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+    ui.primary = { x: cx - 100, y: y + 322, w: 200, h: 46 };
+    if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title);
+    else drawButton(ui.primary, '开始「' + Data.LEVELS[nextIndex].title + '」');
+
+    ui.library = { x: cx - 100, y: y + 376, w: 200, h: 30 };
+    drawButton(ui.library, '字库 · 读辞 · 史官手记',
+      { ghost: true, size: 11.5 });
+
+    text('每契约五分钟 · 共十契三十字', cx, y + 422, 10,
+      'rgba(90,74,52,0.48)', 'center', 'middle');
+    text('字形源自汉典 · CC0', cx, y + 440, 9,
+      'rgba(90,74,52,0.4)', 'center', 'middle');
+  }
+
+  function drawModePill(rect, label, active) {
+    rr(rect.x, rect.y, rect.w, rect.h, rect.h / 2);
+    ctx.fillStyle = active ? C.red : 'rgba(255,250,238,0.72)';
+    ctx.fill();
+    ctx.strokeStyle = active ? 'rgba(150,50,35,0.5)' : 'rgba(140,106,63,0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, 14,
+      active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
+  }
+
+  /* ---------------- 弹层：字卡 ---------------- */
+
+  function drawSpellCard() {
+    var lv = levelConfig();
+    var ch = Data.char(lv.char);
+    var cx = viewW / 2;
+    var w = Math.min(layout.contentW - 4, 336);
+    var h = Math.min(viewH - 40, 500);
+    var x = cx - w / 2;
+    var y = Math.max(safeTop + 10, (viewH - h) / 2);
+
+    var t = Math.min(1, state.cardT / 0.35);
+    var ease = 1 - Math.pow(1 - t, 3);
+
+    ctx.save();
+    ctx.translate(cx, y + h / 2);
+    ctx.scale(0.92 + 0.08 * ease, 0.92 + 0.08 * ease);
+    ctx.translate(-cx, -(y + h / 2));
+    ctx.globalAlpha = ease;
+
+    drawCard(x, y, w, h);
+
+    text('契文已成 · ' + lv.title, cx, y + 32, 11, C.gold, 'center', 'middle', 'bold');
+
+    var gx = cx, gy = y + 102;
+    ctx.beginPath();
+    ctx.arc(gx, gy, 52, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(250,242,226,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(180,145,78,0.45)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    Glyphs.drawById(ctx, ch.glyph, gx, gy, 82, 2.6, C.ink, true);
+
+    text('甲骨', gx, y + 166, 9, C.inkFaint, 'center', 'middle');
+
+    text(ch.kai, cx, y + 200, 34, C.red, 'center', 'middle', 'bold');
+    text(ch.pinyin, cx + 30, y + 196, 11, C.inkSoft, 'left', 'middle');
+    text(ch.meaning, cx, y + 228, 14, C.ink, 'center', 'middle', 'bold');
+
+    var copy = state.mode === 'kid' ? ch.kid : ch.adult;
+    var lines = wrap(copy, w - 56, 11.5);
+    if (lines.length > 3) lines = lines.slice(0, 3);
+    drawLines(lines, cx, y + 258, 19, 11.5, 'rgba(58,45,30,0.78)');
+
+    var boneY = y + 320;
+    if (state.mode === 'kid') {
+      text(ch.gloss, cx, boneY + 8, 11, C.inkSoft, 'center', 'middle');
+    } else {
+      if (ch.bone) {
+        text('「' + ch.bone + '」', cx, boneY - 8, 12.5, C.red, 'center', 'middle');
+        text(ch.gloss, cx, boneY + 10, 10.5, C.inkSoft, 'center', 'middle');
+      } else {
+        text(ch.gloss, cx, boneY + 8, 11, C.inkSoft, 'center', 'middle');
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(150,120,80,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 44, y + 341);
+    ctx.lineTo(x + w - 44, y + 341);
+    ctx.stroke();
+
+    text('本关 ' + state.steps + ' 步 · 得分 ' + state.score + ' · 最高连击 ×' + state.maxMult,
+      cx, y + 354, 10.5, C.inkSoft, 'center', 'middle');
+    text('字卡入库 · 已识 ' + progress.learned.length + ' / ' + Data.CHARS.length,
+      cx, y + 374, 10.5, C.inkSoft, 'center', 'middle');
+    if (ch.bone) {
+      text('新可释读「' + ch.bone + '」', cx, y + 394, 10.5, C.red, 'center', 'middle', 'bold');
+    } else {
+      text('去字库可以翻看这张字卡', cx, y + 394, 10.5, C.inkFaint, 'center', 'middle');
+    }
+
+    if (challenge && challenge.done && challenge.level === state.levelIndex && challenge.step) {
+      var mine = challenge.mine || state.steps;
+      var gap = challenge.step - mine;
+      var cmp = gap > 0
+        ? '你 ' + mine + ' 步 · 好友 ' + challenge.step + ' 步 · 快 ' + gap + ' 步'
+        : (gap === 0
+          ? '与好友同为 ' + mine + ' 步'
+          : '你 ' + mine + ' 步 · 好友 ' + challenge.step + ' 步 · 慢 ' + (-gap) + ' 步');
+      text(cmp, cx, y + h - 92, 11, gap >= 0 ? C.red : C.inkSoft, 'center', 'middle', 'bold');
+    }
+
+    if (isWx) {
+      ui.primary = { x: cx - 100, y: y + h - 68, w: 116, h: 44 };
+      ui.share = { x: cx + 26, y: y + h - 68, w: 74, h: 44 };
+      drawButton(ui.primary, '收下此字', { size: 13.5 });
+      drawButton(ui.share, '分享挑战', { ghost: true, size: 11.5 });
+    } else {
+      ui.primary = { x: cx - 92, y: y + h - 68, w: 184, h: 44 };
+      drawButton(ui.primary, '收下此字', { size: 14.5 });
+    }
+
+    text(state.mode === 'kid' ? '童蒙本' : '雅士本', x + 24, y + 26, 9, C.inkFaint, 'left', 'middle');
+
+    ctx.restore();
+  }
+
+  /* ---------------- 弹层：字灵考校 ---------------- */
+
+  function drawQuiz() {
+    var q = state.quiz;
+    if (!q) return;
+    var ch = Data.char(q.charId);
+    var cx = viewW / 2;
+    var w = Math.min(layout.contentW - 20, 300);
+    var h = 344;
+    var x = cx - w / 2;
+    var y = viewH / 2 - h / 2;
+
+    var t = Math.min(1, q.t / 0.3);
+    ctx.save();
+    ctx.globalAlpha = t;
+    drawCard(x, y, w, h);
+
+    text('字灵考校', cx, y + 30, 12, C.gold, 'center', 'middle', 'bold');
+    Glyphs.drawById(ctx, ch.glyph, cx, y + 92, 66, 2.4, C.ink, true);
+    text('这个字是什么意思？', cx, y + 148, 13, C.ink, 'center', 'middle', 'bold');
+
+    ui.optA = { x: cx - w / 2 + 26, y: y + 176, w: w - 52, h: 46 };
+    ui.optB = { x: cx - w / 2 + 26, y: y + 234, w: w - 52, h: 46 };
+    drawOption(ui.optA, q.options[0].text);
+    drawOption(ui.optB, q.options[1].text);
+
+    text('点中字灵 · 答对可添步数', cx, y + 308, 10,
+      'rgba(90,74,52,0.5)', 'center', 'middle');
+    ctx.restore();
+  }
+
+  function drawOption(rect, label) {
+    rr(rect.x, rect.y, rect.w, rect.h, 12);
+    ctx.fillStyle = 'rgba(255,250,238,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(158,126,82,0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 1, 14, C.ink, 'center', 'middle', 'bold');
+  }
+
+  /* ---------------- 弹层：结算 ---------------- */
+
+  function drawResult() {
+    var all = state.result === 'all';
+    var cx = viewW / 2;
+    var w = Math.min(layout.contentW - 16, 320);
+    var h = 386;
+    var x = cx - w / 2;
+    var y = viewH / 2 - h / 2;
+
+    drawCard(x, y, w, h);
+
+    drawSeal(cx, y + 58, 54, all ? '成' : '再');
+
+    text(all ? '十契圆满' : '步数用尽', cx, y + 116, 23, C.ink, 'center', 'middle', 'bold');
+
+    var sub = all
+      ? '你已识得三十个甲骨字'
+      : (state.mode === 'kid' ? '别急，卜辞只差一点点' : '卜辞未验，再试一契');
+    text(sub, cx, y + 144, 11.5, C.inkSoft, 'center', 'middle');
+
+    text('已识 ' + progress.learned.length + ' / ' + Data.CHARS.length + ' 字',
+      cx, y + 184, 17, all ? C.red : C.ink, 'center', 'middle', 'bold');
+
+    var lv = levelConfig();
+    text(all ? '三十字已入囊中' : '本契目标「' + Data.char(lv.char).kai + '」· 步数 ' + state.moves,
+      cx, y + 208, 10.5, C.inkFaint, 'center', 'middle');
+
+    ui.primary = { x: cx - 95, y: y + 244, w: 190, h: 46 };
+
+    if (all) {
+      ui.secondary = { x: cx - 100, y: y + 302, w: 94, h: 38 };
+      ui.share = { x: cx + 6, y: y + 302, w: 94, h: 38 };
+      drawButton(ui.primary, '从头再练');
+      drawButton(ui.secondary, '分享挑战', { ghost: true, size: 12 });
+      drawButton(ui.share, '回到首页', { ghost: true, size: 12 });
+    } else {
+      ui.secondary = { x: cx - 78, y: y + 302, w: 156, h: 38 };
+      drawButton(ui.primary, '重试此契');
+      drawButton(ui.secondary, '回到首页', { ghost: true, size: 12 });
+    }
+
+    ui.library = { x: cx - 100, y: y + 348, w: 200, h: 30 };
+    drawButton(ui.library, '字库 · 读辞 · 史官手记',
+      { ghost: true, size: 11.5 });
+  }
+
+  function drawSeal(cx, cy, size, ch) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(150,50,35,0.3)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 3;
+    rr(cx - size / 2, cy - size / 2, size, size, size * 0.16);
+    ctx.fillStyle = C.red;
+    ctx.fill();
+    ctx.restore();
+
+    rr(cx - size / 2 + 4, cy - size / 2 + 4, size - 8, size - 8, size * 0.12);
+    ctx.strokeStyle = 'rgba(251,243,226,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    text(ch, cx, cy + 1, size * 0.52, C.cream, 'center', 'middle', 'bold');
+  }
+
+  /* ---------------- 弹层：字库与读辞 ---------------- */
+
+  function drawLibraryTab(rect, label, active) {
+    rr(rect.x, rect.y, rect.w, rect.h, rect.h / 2);
+    ctx.fillStyle = active ? C.red : 'rgba(255,250,238,0.72)';
+    ctx.fill();
+    ctx.strokeStyle = active ? 'rgba(150,50,35,0.5)' : 'rgba(140,106,63,0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, 12,
+      active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
+  }
+
+  function drawLibraryGrid(w, x, y) {
+    var cols = 6;
+    var cw = (w - 40) / cols;
+    var cellH = 58;
+    var gx = x + 20;
+    var gy = y + 92;
+    for (var i = 0; i < Data.CHARS.length; i++) {
+      var ch = Data.CHARS[i];
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      var cellX = gx + col * cw;
+      var cellY = gy + row * cellH;
+      var learned = progress.learned.indexOf(ch.id) >= 0;
+
+      rr(cellX + 2, cellY + 2, cw - 4, cellH - 4, 10);
+      ctx.fillStyle = C.tile;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(122,96,62,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      var ccx = cellX + cw / 2;
+      var ccy = cellY + 27;
+      Glyphs.drawById(ctx, ch.glyph, ccx, ccy - 6, 30, learned ? 1.5 : 0,
+        learned ? C.ink : 'rgba(58,45,30,0.16)', true);
+      text(learned ? ch.kai : '·', ccx, ccy + 16, 9,
+        learned ? C.inkSoft : 'rgba(58,45,30,0.3)', 'center', 'middle');
+
+      ui.libraryCells.push({ x: cellX, y: cellY, w: cw, h: cellH, id: ch.id });
+    }
+  }
+
+  function drawReadings(list, w, x, y) {
+    var cardW = (w - 40) / 2;
+    var cardH = 112;
+    var gap = 10;
+    var gx = x + 20;
+    var gy = y + 92;
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      var col = i % 2;
+      var row = Math.floor(i / 2);
+      var rx = gx + col * (cardW + gap);
+      var ry = gy + row * (cardH + gap);
+      var unlocked = progress.learned.indexOf(r.id) >= 0;
+
+      rr(rx, ry, cardW, cardH, 12);
+      ctx.fillStyle = C.tile;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(122,96,62,0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      text('「' + r.kai + '」· ' + r.meaning, rx + 10, ry + 18, 11,
+        C.ink, 'left', 'middle', 'bold');
+
+      var chipW = 34, chipH = 16;
+      var chipX = rx + cardW - 10 - chipW;
+      var chipY = ry + 10;
+      rr(chipX, chipY, chipW, chipH, chipH / 2);
+      ctx.fillStyle = unlocked ? 'rgba(168,58,42,0.1)' : 'rgba(58,45,30,0.06)';
+      ctx.fill();
+      text(unlocked ? '已释' : '未释', chipX + chipW / 2, chipY + chipH / 2 + 0.5, 9,
+        unlocked ? C.red : C.inkFaint, 'center', 'middle', 'bold');
+
+      var lines = wrap(r.text, cardW - 20, 12);
+      if (lines.length > 2) lines = lines.slice(0, 2);
+      drawLines(lines, rx + 10, ry + 40, 17, 12,
+        unlocked ? C.ink : 'rgba(58,45,30,0.35)', 'left');
+
+      if (unlocked) {
+        var gl = wrap(r.gloss, cardW - 20, 10);
+        if (gl.length > 2) gl = gl.slice(0, 2);
+        drawLines(gl, rx + 10, ry + 40 + lines.length * 17 + 2, 14, 10, C.inkSoft, 'left');
+      }
+
+      ui.verseCells.push({
+        x: rx, y: ry, w: cardW, h: cardH,
+        id: r.id, kai: r.kai, gloss: r.gloss, locked: !unlocked
+      });
+    }
+  }
+
+  function drawNoteDetail(note) {
+    if (!note) return;
+    var cn = ['一', '二', '三', '四', '五', '六'];
+    var idx = Data.NOTES.indexOf(note);
+
+    ctx.fillStyle = 'rgba(42,32,20,0.44)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    var dw = Math.min(viewW - 32, 320);
+    var dh = Math.min(viewH - 40, 440);
+    var dx = (viewW - dw) / 2;
+    var dy = Math.max(safeTop + 8, (viewH - dh) / 2);
+    drawCard(dx, dy, dw, dh);
+    var dcx = dx + dw / 2;
+
+    text('史官手记 · ' + (cn[idx] || ''), dcx, dy + 34, 10, C.gold, 'center', 'middle', 'bold');
+    text(note.title, dcx, dy + 62, 20, C.ink, 'center', 'middle', 'bold');
+
+    ctx.strokeStyle = 'rgba(150,120,80,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dx + 40, dy + 84);
+    ctx.lineTo(dx + dw - 40, dy + 84);
+    ctx.stroke();
+
+    var all = [];
+    for (var i = 0; i < note.body.length; i++) {
+      var ls = wrap(note.body[i], dw - 60, 12);
+      for (var j = 0; j < ls.length; j++) all.push(ls[j]);
+      all.push(null);
+    }
+    if (all.length && all[all.length - 1] === null) all.pop();
+
+    var ly = dy + 106;
+    for (var k = 0; k < all.length && k < 10; k++) {
+      if (all[k] === null) { ly += 6; continue; }
+      text(all[k], dx + 30, ly, 12, 'rgba(58,45,30,0.8)', 'left', 'middle');
+      ly += 20;
+    }
+
+    text('—— 史官 记', dx + dw - 34, dy + dh - 78, 10, C.inkFaint, 'right', 'middle');
+
+    ui.noteClose = { x: dcx - 32, y: dy + dh - 52, w: 64, h: 28 };
+    drawButton(ui.noteClose, '合上', { ghost: true, size: 12 });
+    ui.libraryCells = [];
+    ui.noteCells = [];
+  }
+
+  function drawNotes(w, x, y) {
+    var cn = ['一', '二', '三', '四', '五', '六'];
+    var cols = 2;
+    var gap = 8;
+    var cardW = (w - 40 - gap) / cols;
+    var cardH = 132;
+    var gx = x + 20;
+    var gy = y + 92;
+
+    for (var i = 0; i < Data.NOTES.length; i++) {
+      var note = Data.NOTES[i];
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      var rx = gx + col * (cardW + gap);
+      var ry = gy + row * (cardH + gap);
+      var open = noteOpen(note);
+
+      rr(rx, ry, cardW, cardH, 12);
+      ctx.fillStyle = C.tile;
+      ctx.fill();
+      ctx.strokeStyle = open ? 'rgba(122,96,62,0.2)' : 'rgba(122,96,62,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      text('手记 ' + cn[i], rx + 12, ry + 20, 10,
+        open ? C.gold : 'rgba(58,45,30,0.28)', 'left', 'middle', 'bold');
+      text(note.title, rx + 12, ry + 44, 13.5,
+        open ? C.ink : 'rgba(58,45,30,0.42)', 'left', 'middle', 'bold');
+
+      if (open) {
+        var lines = wrap(note.body[0], cardW - 24, 10);
+        if (lines.length > 3) lines = lines.slice(0, 3);
+        drawLines(lines, rx + 12, ry + 66, 15, 10, C.inkSoft, 'left');
+        text('阅', rx + cardW - 14, ry + cardH - 16, 9, C.red, 'right', 'middle');
+      } else {
+        text('未启', rx + 12, ry + 76, 10, 'rgba(58,45,30,0.45)', 'left', 'middle');
+        text('识 ' + note.need + ' 字后开', rx + 12, ry + 96, 10,
+          'rgba(58,45,30,0.38)', 'left', 'middle');
+      }
+
+      ui.noteCells.push({
+        x: rx, y: ry, w: cardW, h: cardH,
+        id: note.id, need: note.need, locked: !open
+      });
+    }
+
+    var rows = Math.ceil(Data.NOTES.length / cols);
+    var endY = gy + rows * (cardH + gap) - gap;
+    return Math.min(y + (viewH - y - 12) - 26, endY + 28);
+  }
+
+  function drawLibraryDetail(ch) {
+    if (!ch) return;
+    var learned = progress.learned.indexOf(ch.id) >= 0;
+
+    ctx.fillStyle = 'rgba(42,32,20,0.44)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    var dw = 300;
+    var dh = 400;
+    var dx = Math.max(8, Math.min((viewW - dw) / 2, viewW - dw - 8));
+    var dy = Math.max(safeTop + 8, Math.min((viewH - dh) / 2, viewH - dh - 8));
+    drawCard(dx, dy, dw, dh);
+    var dcx = dx + dw / 2;
+
+    Glyphs.drawById(ctx, ch.glyph, dcx, dy + 76, 76, learned ? 2.4 : 0,
+      learned ? C.ink : 'rgba(58,45,30,0.2)', true);
+
+    if (!learned) {
+      var idx = levelForChar(ch.id);
+      var msg = idx >= 0
+        ? '未识 · 完成「第 ' + (idx + 1) + ' 契」可识'
+        : '未识 · 后续契中可识';
+      var ml = wrap(msg, dw - 48, 12);
+      drawLines(ml, dcx, dy + 200, 20, 12, C.inkSoft);
+    } else {
+      text(ch.kai, dcx, dy + 134, 30, C.red, 'center', 'middle', 'bold');
+      text(ch.pinyin, dcx + 26, dy + 130, 12, C.inkSoft, 'left', 'middle');
+      text(ch.meaning, dcx, dy + 158, 11, C.inkSoft, 'center', 'middle');
+
+      var ky = dy + 182;
+      var kid = wrap(ch.kid, dw - 44, 11.5);
+      if (kid.length > 3) kid = kid.slice(0, 3);
+      drawLines(kid, dcx, ky, 17, 11.5, 'rgba(58,45,30,0.78)');
+
+      var ly = ky + kid.length * 17 + 2;
+      var logic = wrap(ch.logic, dw - 44, 10.5);
+      if (logic.length > 2) logic = logic.slice(0, 2);
+      drawLines(logic, dcx, ly, 15, 10.5, C.inkFaint);
+      ly += logic.length * 15 + 6;
+
+      if (ch.bone) {
+        text('「' + ch.bone + '」', dcx, ly + 6, 11, C.gold, 'center', 'middle');
+        ly += 22;
+      }
+      if (ch.gloss) {
+        var gl = wrap(ch.gloss, dw - 44, 10.5);
+        if (gl.length > 2) gl = gl.slice(0, 2);
+        drawLines(gl, dcx, ly + 6, 15, 10.5, C.inkSoft);
+      }
+    }
+
+    ui.libraryClose = { x: dcx - 32, y: dy + dh - 46, w: 64, h: 28 };
+    drawButton(ui.libraryClose, '关闭', { ghost: true, size: 12 });
+    ui.libraryCells = [];
+  }
+
+  function drawLibraryToast(w, bottomY) {
+    var t = state.toast;
+    var alpha = t.t < 0.2 ? t.t / 0.2 : Math.max(0, 1 - (t.t - 1.4) / 0.5);
+    var tw = Math.min(w - 40, 280);
+    var th = 30;
+    var tx = (viewW - tw) / 2;
+    var ty = bottomY - 42;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    rr(tx, ty, tw, th, 15);
+    ctx.fillStyle = 'rgba(51,41,31,0.84)';
+    ctx.fill();
+    text(t.text, viewW / 2, ty + th / 2 + 0.5, 11, C.cream, 'center', 'middle');
+    ctx.restore();
+  }
+
+  function drawLibrary() {
+    var learnedCount = progress.learned.length;
+    var list = readings();
+    var unlockedCount = 0;
+    for (var u = 0; u < list.length; u++) {
+      if (progress.learned.indexOf(list[u].id) >= 0) unlockedCount++;
+    }
+
+    ctx.fillStyle = 'rgba(42,32,20,0.30)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    var w = Math.min(layout.contentW, 400);
+    var x = (viewW - w) / 2;
+    var y = safeTop + 10;
+    var h = viewH - y - 12;
+    drawCard(x, y, w, h);
+
+    text('字库', x + 20, y + 30, 18, C.ink, 'left', 'middle', 'bold');
+    ui.close = { x: x + w - 76, y: y + 16, w: 56, h: 28 };
+    drawButton(ui.close, '返回', { ghost: true, size: 12 });
+
+    var notesOn = notesUnlockedCount();
+    var tabW = Math.min(104, (w - 40 - 16) / 3), tabH = 30, tabGap = 8;
+    ui.tabChars = { x: x + 20, y: y + 48, w: tabW, h: tabH };
+    ui.tabVerses = { x: x + 20 + tabW + tabGap, y: y + 48, w: tabW, h: tabH };
+    ui.tabNotes = { x: x + 20 + (tabW + tabGap) * 2, y: y + 48, w: tabW, h: tabH };
+    drawLibraryTab(ui.tabChars, '字库 ' + learnedCount + ' / ' + Data.CHARS.length,
+      state.libraryTab === 'chars');
+    drawLibraryTab(ui.tabVerses, '读辞 ' + unlockedCount + ' / ' + list.length,
+      state.libraryTab === 'verses');
+    drawLibraryTab(ui.tabNotes, '手记 ' + notesOn + ' / ' + Data.NOTES.length,
+      state.libraryTab === 'notes');
+
+    ui.libraryCells = [];
+    ui.verseCells = [];
+    ui.noteCells = [];
+
+    if (state.libraryTab === 'verses') {
+      drawReadings(list, w, x, y);
+      text('每识一字，其身后的卜辞自明 · 已能释读 ' + unlockedCount + ' / ' + list.length,
+        x + w / 2, y + 474, 10, C.inkFaint, 'center', 'middle');
+    } else if (state.libraryTab === 'notes') {
+      var footY = drawNotes(w, x, y);
+      text('识得愈多，史官翻得愈多 · 已启 ' + notesOn + ' / ' + Data.NOTES.length,
+        x + w / 2, footY, 10, C.inkFaint, 'center', 'middle');
+    } else {
+      drawLibraryGrid(w, x, y);
+      text('完成一契，其字即收入字库 · 已识 ' + learnedCount + ' / ' + Data.CHARS.length,
+        x + w / 2, y + 402, 10, C.inkFaint, 'center', 'middle');
+    }
+
+    if (state.noteSel) drawNoteDetail(noteById(state.noteSel));
+    else if (state.librarySel) drawLibraryDetail(Data.char(state.librarySel));
+    if (state.toast) drawLibraryToast(w, y + h);
+  }
+
+  function drawOverlay() {
+    if (state.screen === 'play') return;
+    ctx.fillStyle = 'rgba(42,32,20,0.44)';
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    ui.primary = null;
+    ui.secondary = null;
+    ui.share = null;
+    ui.modeKid = null;
+    ui.modeAdult = null;
+    ui.optA = null;
+    ui.optB = null;
+    ui.library = null;
+    ui.close = null;
+    ui.tabChars = null;
+    ui.tabVerses = null;
+    ui.tabNotes = null;
+    ui.libraryClose = null;
+    ui.libraryCells = null;
+    ui.verseCells = null;
+    ui.noteCells = null;
+    ui.noteClose = null;
+
+    if (state.screen === 'start') drawStart();
+    else if (state.screen === 'card') drawSpellCard();
+    else if (state.screen === 'quiz') drawQuiz();
+    else if (state.screen === 'result') drawResult();
+    else if (state.screen === 'library') drawLibrary();
+  }
+
+  function drawFlash() {
+    if (state.flash <= 0.001) return;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, state.flash) * 0.2;
+    ctx.fillStyle = '#FFF4DC';
+    ctx.fillRect(0, 0, viewW, viewH);
+    ctx.restore();
+  }
+
+  function draw() {
+    drawBackground();
+    drawHeader();
+    if (state.screen !== 'start') {
+      drawTargetPanel();
+      ctx.save();
+      if (state.shake > 0.05) {
+        var sh = state.shake;
+        ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
+      }
+      drawBoardPanel();
+      drawTiles();
+      drawRings();
+      drawParticles();
+      drawPops();
+      ctx.restore();
+      drawCombo();
+      drawFlash();
+      drawMilestone();
+      drawToast();
+      drawFooter();
+    }
+    drawOverlay();
+  }
+
+  /* ---------------- 输入 ---------------- */
+
+  var pointer = null;
+
+  function hitCell(x, y) {
+    var b = layout.board;
+    var bx = x - (b.x + b.pad);
+    var by = y - (b.y + b.pad);
+    if (bx < 0 || by < 0 || bx >= b.cell * SIZE || by >= b.cell * SIZE) return -1;
+    var c = Math.floor(bx / b.cell);
+    var r = Math.floor(by / b.cell);
+    return r * SIZE + c;
+  }
+
+  function inRect(x, y, r) {
+    return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  }
+
+  function onDown(x, y) {
+    Sfx.unlock();
+    if (state.screen !== 'play') {
+      pointer = { x: x, y: y, idx: -1, moved: true };
+      return;
+    }
+    if (state.phase !== 'idle') {
+      pointer = null;
+      return;
+    }
+    var index = hitCell(x, y);
+    pointer = { x: x, y: y, idx: index, moved: false };
+    if (index < 0) state.selected = -1;
+  }
+
+  function onMove(x, y) {
+    if (!pointer || pointer.moved || state.screen !== 'play' || state.phase !== 'idle') return;
+    if (pointer.idx < 0) return;
+
+    var dx = x - pointer.x;
+    var dy = y - pointer.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < layout.board.cell * 0.28) return;
+
+    var r = Math.floor(pointer.idx / SIZE);
+    var c = pointer.idx % SIZE;
+    var dr = 0, dc = 0;
+    if (Math.abs(dx) > Math.abs(dy)) dc = dx > 0 ? 1 : -1;
+    else dr = dy > 0 ? 1 : -1;
+
+    pointer.moved = true;
+    var nr = r + dr;
+    var nc = c + dc;
+    if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) {
+      state.selected = pointer.idx;
+      return;
+    }
+    attemptSwap(pointer.idx, nr * SIZE + nc);
+  }
+
+  function onUp(x, y) {
+    if (!pointer) return;
+    var p = pointer;
+    pointer = null;
+
+    if (inRect(x, y, ui.sound)) { Sfx.toggle(); Sfx.play('tap'); return; }
+
+    var onButton = inRect(x, y, ui.primary) || inRect(x, y, ui.secondary) ||
+      inRect(x, y, ui.share) || inRect(x, y, ui.modeKid) || inRect(x, y, ui.modeAdult) ||
+      inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
+      inRect(x, y, ui.library) || inRect(x, y, ui.close);
+    if (onButton) Sfx.play('tap');
+
+    if (state.screen === 'start') {
+      if (inRect(x, y, ui.modeKid)) { setMode('kid'); return; }
+      if (inRect(x, y, ui.modeAdult)) { setMode('adult'); return; }
+      if (inRect(x, y, ui.library)) { openLibrary(); return; }
+      if (inRect(x, y, ui.primary)) {
+        var invited = challenge && !challenge.done ? challenge.level : -1;
+        var idx = invited >= 0 ? invited : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+        startLevel(idx);
+      }
+      return;
+    }
+
+    if (state.screen === 'card') {
+      if (inRect(x, y, ui.share)) { shareChallenge(); return; }
+      if (inRect(x, y, ui.primary)) {
+        if (challenge && challenge.done) challenge = null;
+        advance();
+      }
+      return;
+    }
+
+    if (state.screen === 'quiz') {
+      var q = state.quiz;
+      if (!q) return;
+      if (inRect(x, y, ui.optA)) { answerQuiz(q.options[0].ok); return; }
+      if (inRect(x, y, ui.optB)) { answerQuiz(q.options[1].ok); return; }
+      return;
+    }
+
+    if (state.screen === 'result') {
+      if (inRect(x, y, ui.share)) { shareChallenge(true); return; }
+      if (inRect(x, y, ui.library)) { openLibrary(); return; }
+      if (inRect(x, y, ui.primary)) {
+        if (state.result === 'all') startLevel(0);
+        else startLevel(state.levelIndex);
+        return;
+      }
+      if (inRect(x, y, ui.secondary)) { goHome(); return; }
+      return;
+    }
+
+    if (state.screen === 'library') {
+      if (inRect(x, y, ui.close)) { goHome(); return; }
+      if (inRect(x, y, ui.tabChars)) {
+        state.libraryTab = 'chars';
+        state.librarySel = null;
+        state.noteSel = null;
+        return;
+      }
+      if (inRect(x, y, ui.tabVerses)) {
+        state.libraryTab = 'verses';
+        state.librarySel = null;
+        state.noteSel = null;
+        return;
+      }
+      if (inRect(x, y, ui.tabNotes)) {
+        state.libraryTab = 'notes';
+        state.librarySel = null;
+        state.noteSel = null;
+        return;
+      }
+      if (state.noteSel) {
+        if (inRect(x, y, ui.noteClose)) state.noteSel = null;
+        return;
+      }
+      if (state.librarySel) {
+        if (inRect(x, y, ui.libraryClose)) state.librarySel = null;
+        return;
+      }
+      var notes = ui.noteCells || [];
+      for (var ni = 0; ni < notes.length; ni++) {
+        if (inRect(x, y, notes[ni])) {
+          if (notes[ni].locked) {
+            showToast('再识 ' + (notes[ni].need - progress.learned.length) + ' 字，史官才翻这一页');
+          } else {
+            state.noteSel = notes[ni].id;
+          }
+          return;
+        }
+      }
+      var cells = ui.libraryCells || [];
+      for (var ci = 0; ci < cells.length; ci++) {
+        if (inRect(x, y, cells[ci])) {
+          state.librarySel = cells[ci].id;
+          return;
+        }
+      }
+      var verses = ui.verseCells || [];
+      for (var vi = 0; vi < verses.length; vi++) {
+        if (inRect(x, y, verses[vi])) {
+          if (verses[vi].locked) showToast('先识「' + verses[vi].kai + '」再读');
+          else if (verses[vi].gloss) showToast(verses[vi].gloss);
+          return;
+        }
+      }
+      return;
+    }
+
+    if (inRect(x, y, ui.restart)) {
+      startLevel(state.levelIndex);
+      return;
+    }
+
+    if (p.moved) return;
+    var index = p.idx;
+    if (index < 0) return;
+    tapCell(index);
+  }
+
+  function bindInput() {
+    if (isWx) {
+      wx.onTouchStart(function (e) {
+        var t = e.touches && e.touches[0];
+        if (t) onDown(t.clientX, t.clientY);
+      });
+      wx.onTouchMove(function (e) {
+        var t = e.touches && e.touches[0];
+        if (t) onMove(t.clientX, t.clientY);
+      });
+      wx.onTouchEnd(function (e) {
+        var t = e.changedTouches && e.changedTouches[0];
+        onUp(t ? t.clientX : 0, t ? t.clientY : 0);
+      });
+      wx.onTouchCancel(function () {
+        pointer = null;
+      });
+    } else {
+      canvas.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        onDown(e.clientX, e.clientY);
+      });
+      canvas.addEventListener('pointermove', function (e) {
+        onMove(e.clientX, e.clientY);
+      });
+      canvas.addEventListener('pointerup', function (e) {
+        onUp(e.clientX, e.clientY);
+      });
+      canvas.addEventListener('pointercancel', function () {
+        pointer = null;
+      });
+      window.addEventListener('resize', function () {
+        resize();
+      });
+    }
+  }
+
+  /* ---------------- 主循环 ---------------- */
+
+  var raf = isWx
+    ? (canvas.requestAnimationFrame
+      ? canvas.requestAnimationFrame.bind(canvas)
+      : function (cb) { setTimeout(cb, 16); })
+    : window.requestAnimationFrame.bind(window);
+
+  var lastTime = Date.now();
+
+  function loop() {
+    var now = Date.now();
+    var dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    update(dt);
+    draw();
+    raf(loop);
+  }
+
+  /* ---------------- 书中拓影字形 ---------------- */
+
+  var GLYPH_IMAGE_IDS = [
+    'sun', 'moon', 'mountain', 'water', 'tree', 'field', 'fire', 'person',
+    'big', 'eye', 'mouth', 'rain', 'cloud', 'river', 'stone', 'soil',
+    'ox', 'sheep', 'bird', 'fish', 'bamboo', 'woods', 'forest', 'bright',
+    'rest', 'peace', 'good', 'pick'
+  ];
+
+  function loadGlyphImages() {
+    for (var i = 0; i < GLYPH_IMAGE_IDS.length; i++) {
+      (function (id) {
+        var img = isWx ? wx.createImage() : new Image();
+        img.onload = function () {
+          Glyphs.registerImage(id, img);
+        };
+        img.src = 'assets/glyphs/' + id + '.png';
+      })(GLYPH_IMAGE_IDS[i]);
+    }
+  }
+
+  /* ---------------- 启动 ---------------- */
+
+  function setupShare() {
+    if (!isWx) return;
+    try {
+      if (wx.showShareMenu) {
+        wx.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] });
+      }
+      if (wx.onShareAppMessage) {
+        wx.onShareAppMessage(function () {
+          var lv = levelConfig();
+          var used = state.steps || 0;
+          var title = used > 0
+            ? '甲骨消消乐 · 我在「' + lv.title + ' · ' + Data.char(lv.char).kai + '」用了 ' + used + ' 步'
+            : '甲骨消消乐 · ' + lv.title + '，来认一个「' + Data.char(lv.char).kai + '」';
+          return {
+            title: title,
+            query: 'lv=' + (state.levelIndex + 1) + '&step=' + used
+          };
+        });
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
+  resize();
+  bindInput();
+  loadGlyphImages();
+  setupShare();
+  watchShow();
+
+  raf(loop);
+})();

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F1E4CC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="甲骨消消乐：消甲骨、识字卡、读卜辞，寓教于乐的甲骨文消消乐。">
+  <title>甲骨消消乐</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #E3D0AE;
+    }
+    #game {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <script src="js/core.js"></script>
+  <script src="js/trace-data.js"></script>
+  <script src="js/glyphs.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sfx.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
