@@ -1388,22 +1388,6 @@
       ui.sound = null;
       ui.exit = null;
       ui.feedback = null;
-
-      if (state.screen === 'start') {
-        /* 与卡片右缘对齐，不再按内容列外飘 */
-        var cardW = Math.min(l.contentW - 8, 332);
-        var fw = 44, fh = 24;
-        var fx = (viewW + cardW) / 2 - fw;
-        var fy = l.top + 3;
-        rr(fx, fy, fw, fh, 12);
-        ctx.fillStyle = 'rgba(255,250,238,0.5)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(140,106,63,0.4)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        text('意见', fx + fw / 2, fy + fh / 2 + 0.5, 11, C.inkSoft, 'center', 'middle');
-        ui.feedback = { x: fx - 6, y: fy - 6, w: fw + 12, h: fh + 12 };
-      }
     }
   }
 
@@ -1916,36 +1900,51 @@
 
   /* ---------------- 弹层：开始 ---------------- */
 
+  /* 首页贴边卡片：左右各 12，上下各 16，长屏最多 820 高 */
+  function startCardRect() {
+    var w = layout.contentW;
+    var top = safeTop + 16;
+    var h = Math.min(820, viewH - top - 16);
+    return {
+      x: (viewW - w) / 2,
+      y: top + Math.max(0, (viewH - top - 16 - h) / 2),
+      w: w,
+      h: h
+    };
+  }
+
   function drawStart() {
     var cx = viewW / 2;
-    var w = Math.min(layout.contentW - 8, 332);
-    /* 卡片随屏高长高，长屏不再上下各空两百多像素；375 及以下仍是 400 */
-    var h = Math.max(400, Math.min(520, Math.round(viewH * 0.6)));
-    var x = cx - w / 2;
-    var y = Math.max(safeTop + 12, viewH / 2 - h / 2);
+    var r = startCardRect();
+    var x = r.x, y = r.y, w = r.w, h = r.h;
 
-    /* 多出来的高度平均摊进五处间距，字号不动，只加呼吸 */
-    var gapAdd = (h - 400) / 5;
-    var infoY = y + 192 + gapAdd;
-    var primaryY = y + 222 + gapAdd * 2;
-    var rowY = y + 282 + gapAdd * 3;
-    var footY = y + 342 + gapAdd * 4;
+    /* 多出来的高度摊进四处间距（字变 / 已识 / 主按钮 / 十契），字号不动 */
+    var g = Math.max(0, Math.min(84, (h - 468) / 4));
 
     drawCard(x, y, w, h);
-    drawOrnament(cx, y + 38);
+    drawOrnament(cx, y + 56);
 
-    text('甲骨消消乐', cx, y + 68, 26, C.ink, 'center', 'middle', 'bold');
-    text('契于龟甲 · 消而成文', cx, y + 94, 11.5, C.inkSoft, 'center', 'middle');
+    text('甲骨消消乐', cx, y + 80, 28, C.ink, 'center', 'middle', 'bold');
+    text('契于龟甲 · 消而成文', cx, y + 106, 12, C.inkSoft, 'center', 'middle');
 
-    /* 字号是设置项，单放右上角，不占正文的按钮行 */
+    /* 字号是设置项，单放右上角；「意见」放左上角与之对称 */
     drawFontToggle(x + w - 12, y + 14);
+    var fbx = x + 12, fby = y + 16, fbw = 44, fbh = 24;
+    rr(fbx, fby, fbw, fbh, 12);
+    ctx.fillStyle = 'rgba(255,250,238,0.5)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(140,106,63,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text('意见', fbx + fbw / 2, fby + fbh / 2 + 0.5, 11, C.inkSoft, 'center', 'middle');
+    ui.feedback = { x: fbx - 6, y: fby - 6, w: fbw + 12, h: fbh + 12 };
 
     var demoIdx = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
     var demoCh = Data.char(Data.LEVELS[demoIdx].char);
 
     /* 首屏字变：一进首页就能看见这个字从甲骨走到楷书 */
-    var px = x + 22, pw = w - 44, py = y + 112, ph = 50;
-    rr(px, py, pw, ph, 14);
+    var px = x + 20, pw = w - 40, py = y + 128 + g, ph = 58;
+    rr(px, py, pw, ph, 15);
     ctx.fillStyle = 'rgba(255,250,238,0.62)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(180,145,78,0.35)';
@@ -1953,17 +1952,17 @@
     ctx.stroke();
 
     ui.startEvo = { x: px, y: py, w: pw, h: ph };
-    var demo = drawStartEvo(demoCh, px + 38, py + 25, 34);
+    var demo = drawStartEvo(demoCh, px + 40, py + 29, 42);
 
     ctx.beginPath();
-    ctx.moveTo(px + 70, py + 12);
-    ctx.lineTo(px + 70, py + 38);
+    ctx.moveTo(px + 78, py + 14);
+    ctx.lineTo(px + 78, py + 44);
     ctx.strokeStyle = 'rgba(180,145,78,0.28)';
     ctx.stroke();
 
     var dmeta = EVO_META[demo.stages[demo.i]];
-    text(dmeta.name, px + 82, py + 17, 12.5, C.ink, 'left', 'middle', 'bold');
-    text(fitText(dmeta.era + ' · ' + dmeta.note, 8.5, pw - 132), px + 82, py + 30, 8.5,
+    text(dmeta.name, px + 90, py + 20, 13.5, C.ink, 'left', 'middle', 'bold');
+    text(fitText(dmeta.era + ' · ' + dmeta.note, 9.5, pw - 150), px + 90, py + 35, 9.5,
       C.inkSoft, 'left', 'middle');
 
     var ALL_STAGE = ['oracle', 'bronze', 'seal', 'kai'];
@@ -1972,7 +1971,7 @@
       var has = demo.stages.indexOf(ALL_STAGE[d]) >= 0;
       var act = d === curAll;
       ctx.beginPath();
-      ctx.arc(px + 84 + d * 13, py + 41, act ? 3.2 : 2.1, 0, Math.PI * 2);
+      ctx.arc(px + 92 + d * 14, py + 47, act ? 3.4 : 2.2, 0, Math.PI * 2);
       if (!has) {
         ctx.strokeStyle = 'rgba(150,120,80,0.5)';
         ctx.lineWidth = 1;
@@ -1983,11 +1982,12 @@
       }
     }
 
-    text(demoCh.kai, px + pw - 34, py + 20, 20, C.gold, 'center', 'middle', 'bold');
-    text('点开细看', px + pw - 34, py + 38, 7.5, 'rgba(168,58,42,0.6)', 'center', 'middle');
+    text(demoCh.kai, px + pw - 36, py + 23, 22, C.gold, 'center', 'middle', 'bold');
+    text('点开细看', px + pw - 36, py + 43, 8, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
     var learned = progress.learned.length;
     var inviting = !!challenge && !challenge.done;
+    var infoY = y + 206 + g * 1.6;
     var infoLine = fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
       progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40);
     if (inviting) {
@@ -2000,41 +2000,76 @@
       text(fitText(infoLine, 10, w - 40), cx, infoY + 12, 10,
         'rgba(90,74,52,0.5)', 'center', 'middle');
     } else {
-      text(infoLine, cx, infoY, 11, C.gold, 'center', 'middle', 'bold');
+      text(infoLine, cx, infoY, 11.5, C.gold, 'center', 'middle', 'bold');
     }
 
     var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
     var allDone = progress.unlocked >= LEVEL_COUNT;
-    ui.primary = { x: cx - 100, y: primaryY, w: 200, h: 46 };
-    if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title);
-    else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」');
-    else drawButton(ui.primary, '继续「' + Data.LEVELS[nextIndex].title + '」');
+    var primaryY = y + 228 + g * 2.5;
+    ui.primary = { x: x + 20, y: primaryY, w: w - 40, h: 50 };
+    if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title, { size: 15 });
+    else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
+    else drawButton(ui.primary, '继续「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
 
-    /* 副按钮宽按卡片内宽收，320 窄屏也不会探出卡片 */
-    var bgap = 8;
-    var bw = Math.min(98, Math.floor((w - 36 - bgap * 2) / 3));
-    var bx0 = cx - (bw * 3 + bgap * 2) / 2;
-    ui.pick = { x: bx0, y: rowY, w: bw, h: 38 };
-    ui.library = { x: bx0 + bw + bgap, y: rowY, w: bw, h: 38 };
-    ui.quick = { x: bx0 + (bw + bgap) * 2, y: rowY, w: bw, h: 38 };
-    drawButton(ui.pick, '选契', { ghost: true, size: 12.5 });
-    drawButton(ui.library, '字库', { ghost: true, size: 12.5 });
-    drawButton(ui.quick, '快契', { ghost: true, size: 12.5 });
+    /* 副按钮宽按卡片内宽均分，320 窄屏也不会探出卡片 */
+    var bgap = 10;
+    var bw = Math.floor((w - 40 - bgap * 2) / 3);
+    var rowY = primaryY + 64;
+    ui.pick = { x: x + 20, y: rowY, w: bw, h: 46 };
+    ui.library = { x: x + 20 + bw + bgap, y: rowY, w: bw, h: 46 };
+    ui.quick = { x: x + 20 + (bw + bgap) * 2, y: rowY, w: bw, h: 46 };
+    drawButton(ui.pick, '选契', { ghost: true, size: 13.5 });
+    drawButton(ui.library, '字库', { ghost: true, size: 13.5 });
+    drawButton(ui.quick, '快契', { ghost: true, size: 13.5 });
 
-    text('字库随时可翻 · 不必先通关', cx, footY, 10,
+    /* 十契点阵：一眼看出走到第几契；页脚随卡片高度往下摊 */
+    var metaY = y + h - 24;
+    var divY = y + 350 + g * 3;
+    var dotsY = divY + 20;
+    var foot1Y = y + 406 + g * 3.5;
+    var foot2Y = foot1Y + 20;
+
+    ctx.beginPath();
+    ctx.moveTo(x + 20, divY);
+    ctx.lineTo(x + w - 20, divY);
+    ctx.strokeStyle = 'rgba(180,145,78,0.26)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    text('十契', x + 20, dotsY, 10.5, 'rgba(90,74,52,0.55)', 'left', 'middle');
+    var dotR = 4.5;
+    var dotGap = Math.min(14, (w - 40 - 48 - dotR * 2) / 9);
+    var dotRight = x + w - 20 - dotR;
+    for (var k = 0; k < LEVEL_COUNT; k++) {
+      var kch = Data.char(Data.LEVELS[k].char);
+      var kdone = progress.learned.indexOf(kch.id) >= 0;
+      var kcur = k === progress.unlocked - 1;
+      ctx.beginPath();
+      ctx.arc(dotRight - (LEVEL_COUNT - 1 - k) * dotGap, dotsY, dotR, 0, Math.PI * 2);
+      if (kdone) {
+        ctx.fillStyle = C.red;
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = kcur ? C.red : 'rgba(140,106,63,0.3)';
+        ctx.lineWidth = kcur ? 1.6 : 1.2;
+        ctx.stroke();
+      }
+    }
+
+    text('点字卡可看甲骨原文与字形本源', cx, foot1Y, 10.5,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text('每契约两三分钟 · 共十契三十字', cx, footY + 18, 9.5,
-      'rgba(90,74,52,0.4)', 'center', 'middle');
-    text('字形源自汉典 · CC0', cx, footY + 36, 9,
-      'rgba(90,74,52,0.34)', 'center', 'middle');
+    text('停手七秒或点「提示」，会亮出一处可消', cx, foot2Y, 10.5,
+      'rgba(90,74,52,0.48)', 'center', 'middle');
+    text(fitText('每契约两三分钟 · 共十契三十字 · 字形源自汉典 CC0', 9, w - 32),
+      cx, metaY, 9, 'rgba(90,74,52,0.34)', 'center', 'middle');
   }
 
   /* 右上角「大字」：虚线细边的小开关，样式刻意区别于实心胶囊 */
   function drawFontToggle(right, top) {
-    var fw = 52, fh = 24;
+    var fw = 56, fh = 28;
     var bx = right - fw;
-    /* 视觉尺寸不变，热区补到 64×44，够 44px 触控线 */
-    ui.fontPill = { x: bx - 6, y: top - 10, w: fw + 12, h: 44 };
+    /* 视觉尺寸不变，热区补到 68×44，够 44px 触控线 */
+    ui.fontPill = { x: bx - 6, y: top - 8, w: fw + 12, h: 44 };
     var on = progress.bigText;
     rr(bx, top, fw, fh, fh / 2);
     ctx.fillStyle = on ? 'rgba(168,58,42,0.10)' : 'rgba(255,250,238,0.45)';
