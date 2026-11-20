@@ -295,7 +295,8 @@
     evoClose: null,
     posterSave: null,
     posterClose: null,
-    posterImage: null
+    posterImage: null,
+    feedback: null
   };
 
   function levelConfig() {
@@ -919,6 +920,121 @@
     state.toast = { text: str, t: 0 };
   }
 
+  /* ---------------- 意见反馈 ---------------- */
+
+  /* 填入微信云开发环境 ID 后反馈才会上传；留空则只暂存本地。 */
+  var FEEDBACK_ENV = '';
+  var FEEDBACK_KEY = 'oracle-match3.feedback';
+  var FEEDBACK_THANKS = [
+    '收到，谢谢。史官已刻进龟甲。',
+    '记下了。改没改，你回来一看便知。',
+    '这条我们当真，谢谢你说出来。',
+    '已录入。史官不睡，先去改字。'
+  ];
+  var feedbackPending = null;
+  var feedbackCloudReady = false;
+
+  function pendingFeedback() {
+    if (feedbackPending) return feedbackPending;
+    try {
+      if (isWx) {
+        feedbackPending = wx.getStorageSync(FEEDBACK_KEY) || [];
+      } else {
+        feedbackPending = JSON.parse(window.localStorage.getItem(FEEDBACK_KEY) || '[]');
+      }
+    } catch (e) {
+      feedbackPending = [];
+    }
+    return feedbackPending;
+  }
+
+  function savePendingFeedback() {
+    try {
+      if (isWx) wx.setStorageSync(FEEDBACK_KEY, pendingFeedback());
+      else window.localStorage.setItem(FEEDBACK_KEY, JSON.stringify(pendingFeedback()));
+    } catch (e) { /* 忽略 */ }
+  }
+
+  function feedbackContext() {
+    var lv = levelConfig();
+    var sys = {};
+    if (isWx) {
+      try { sys = wx.getSystemInfoSync() || {}; } catch (e) { /* 忽略 */ }
+    }
+    return {
+      text: '',
+      screen: state.screen,
+      level: lv ? lv.title : '',
+      mode: state.mode,
+      quick: !!state.quick,
+      learned: progress.learned.length,
+      model: sys.model || '',
+      system: sys.system || '',
+      at: Date.now()
+    };
+  }
+
+  function uploadFeedback(entry) {
+    if (!isWx || !wx.cloud || !FEEDBACK_ENV) return false;
+    try {
+      if (!feedbackCloudReady) {
+        wx.cloud.init({ env: FEEDBACK_ENV, traceUser: false });
+        feedbackCloudReady = true;
+      }
+      wx.cloud.database().collection('feedback').add({ data: entry }).then(function () {
+        var list = pendingFeedback();
+        var i = list.indexOf(entry);
+        if (i >= 0) {
+          list.splice(i, 1);
+          savePendingFeedback();
+        }
+      }, function () { /* 留到下次启动补发 */ });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function flushFeedback() {
+    var list = pendingFeedback();
+    for (var i = 0; i < list.length; i++) uploadFeedback(list[i]);
+  }
+
+  function submitFeedback(txt) {
+    var entry = feedbackContext();
+    entry.text = txt;
+    var list = pendingFeedback();
+    list.push(entry);
+    if (list.length > 20) list.splice(0, list.length - 20);
+    savePendingFeedback();
+
+    if (!isWx) { showToast('已记录，网页版暂未接通'); return; }
+    if (!FEEDBACK_ENV) { showToast('已记录，反馈通道未开启'); return; }
+    uploadFeedback(entry);
+    showToast(FEEDBACK_THANKS[Math.floor(Math.random() * FEEDBACK_THANKS.length)]);
+  }
+
+  function openFeedback() {
+    if (!isWx) {
+      var txt = window.prompt('意见反馈（一句话即可）', '');
+      if (txt && txt.trim()) submitFeedback(txt.trim().slice(0, 200));
+      return;
+    }
+    wx.showModal({
+      title: '意见反馈',
+      editable: true,
+      placeholderText: '一句话说说建议或遇到的问题',
+      confirmText: '发送',
+      cancelText: '算了',
+      success: function (res) {
+        if (!res.confirm) return;
+        var txt = (res.content || '').trim();
+        if (!txt) { showToast('写一句话就行'); return; }
+        submitFeedback(txt.slice(0, 200));
+      }
+    });
+  }
+
   function spawnBurst(x, y, n, opts) {
     opts = opts || {};
     if (state.particles.length > 220) return;
@@ -1281,6 +1397,21 @@
       ui.restart = null;
       ui.sound = null;
       ui.exit = null;
+      ui.feedback = null;
+
+      if (state.screen === 'start') {
+        var fw = 44, fh = 24;
+        var fx = l.x + l.contentW - fw;
+        var fy = l.top + 3;
+        rr(fx, fy, fw, fh, 12);
+        ctx.fillStyle = 'rgba(255,250,238,0.5)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(140,106,63,0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        text('意见', fx + fw / 2, fy + fh / 2 + 0.5, 11, C.inkSoft, 'center', 'middle');
+        ui.feedback = { x: fx - 6, y: fy - 6, w: fw + 12, h: fh + 12 };
+      }
     }
   }
 
@@ -1780,6 +1911,9 @@
     text('甲骨消消乐', cx, y + 68, 26, C.ink, 'center', 'middle', 'bold');
     text('契于龟甲 · 消而成文', cx, y + 94, 11.5, C.inkSoft, 'center', 'middle');
 
+    /* 字号是设置项，单放右上角；与「童蒙 / 雅士」并排会被当成第三档 */
+    drawFontToggle(x + w - 12, y + 14);
+
     var demoIdx = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
     var demoCh = Data.char(Data.LEVELS[demoIdx].char);
 
@@ -1826,18 +1960,16 @@
     text(demoCh.kai, px + pw - 34, py + 20, 20, C.gold, 'center', 'middle', 'bold');
     text('点开细看', px + pw - 34, py + 38, 7.5, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
-    var pillW = 86, pillH = 34, gap = 10, fontW = 72;
-    var totalW = pillW * 2 + fontW + gap * 2;
+    var pillW = 86, pillH = 34, gap = 10;
+    var totalW = pillW * 2 + gap;
     var px0 = cx - totalW / 2;
     var py0 = y + 170;
 
     ui.modeKid = { x: px0, y: py0, w: pillW, h: pillH };
     ui.modeAdult = { x: px0 + pillW + gap, y: py0, w: pillW, h: pillH };
-    ui.fontPill = { x: px0 + (pillW + gap) * 2, y: py0, w: fontW, h: pillH };
 
     drawModePill(ui.modeKid, '童蒙', state.mode === 'kid');
     drawModePill(ui.modeAdult, '雅士', state.mode === 'adult');
-    drawModePill(ui.fontPill, '大字', progress.bigText, 12.5);
 
     var desc = wrap(MODE_DESC[state.mode], w - 64, 11);
     drawLines(desc, cx, y + 226, 18, 11, 'rgba(58,45,30,0.66)');
@@ -1893,6 +2025,24 @@
     ctx.stroke();
     text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, fs || 14,
       active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
+  }
+
+  /* 右上角「大字」：虚线细边的小开关，样式刻意区别于实心胶囊 */
+  function drawFontToggle(right, top) {
+    var fw = 52, fh = 24;
+    var bx = right - fw;
+    ui.fontPill = { x: bx - 4, y: top - 6, w: fw + 8, h: fh + 12 };
+    var on = progress.bigText;
+    rr(bx, top, fw, fh, fh / 2);
+    ctx.fillStyle = on ? 'rgba(168,58,42,0.10)' : 'rgba(255,250,238,0.45)';
+    ctx.fill();
+    ctx.strokeStyle = on ? 'rgba(168,58,42,0.55)' : 'rgba(140,106,63,0.3)';
+    ctx.lineWidth = 1;
+    if (ctx.setLineDash) ctx.setLineDash([3, 2]);
+    ctx.stroke();
+    if (ctx.setLineDash) ctx.setLineDash([]);
+    text('大字', bx + fw / 2, top + fh / 2 + 0.5, 10.5,
+      on ? C.red : 'rgba(58,45,30,0.5)', 'center', 'middle', 'bold');
   }
 
   /* ---------------- 选契：十契地图 ---------------- */
@@ -3182,6 +3332,7 @@
     ui.share = null;
     ui.modeKid = null;
     ui.modeAdult = null;
+    ui.fontPill = null;
     ui.optA = null;
     ui.optB = null;
     ui.library = null;
@@ -3338,10 +3489,11 @@
       inRect(x, y, ui.evo) ||
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
       inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit) ||
-      inRect(x, y, ui.fontPill);
+      inRect(x, y, ui.fontPill) || inRect(x, y, ui.feedback);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
+      if (inRect(x, y, ui.feedback)) { openFeedback(); return; }
       if (inRect(x, y, ui.startEvo)) {
         var si = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
         openEvolution(Data.char(Data.LEVELS[si].char));
@@ -3596,6 +3748,7 @@
   loadGlyphImages();
   setupShare();
   watchShow();
+  flushFeedback();
 
   raf(loop);
 })();
