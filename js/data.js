@@ -816,6 +816,141 @@
       adult: '甲骨「鼓」象鼓形，或加手持槌，会击鼓之意。',
       bone: '',
       gloss: '「鼓」本义为击鼓，后指鼓这种乐器。'
+    },
+    {
+      id: 'he2', glyph: 'he2', kai: '禾', pinyin: 'hé', volume: '自然',
+      meaning: '谷子',
+      logic: '画一株成熟的谷子：上面谷穗弯弯下垂，下面是根。',
+      kid: '一株谷子，穗子沉甸甸地弯下了腰。',
+      adult: '甲骨「禾」象成熟的谷子，上象穗与叶，下象根。',
+      bone: '受禾',
+      gloss: '卜辞问「受禾」，就是问今年的谷子收成好不好。'
+    },
+    {
+      id: 'mai', glyph: 'mai', kai: '麦', pinyin: 'mài', volume: '自然',
+      meaning: '麦子',
+      logic: '画一株麦子：中间一根麦秆，两边垂着麦穗。',
+      kid: '一株麦子，穗子一颗颗往下垂。',
+      adult: '甲骨「麦」象麦株之形，本义为大麦。',
+      bone: '',
+      gloss: '「麦」和「禾」都画庄稼，区别在穗子朝下垂还是朝上举。'
+    },
+    {
+      id: 'sang', glyph: 'sang', kai: '桑', pinyin: 'sāng', volume: '自然',
+      meaning: '桑树',
+      logic: '画一棵桑树：枝上长满叶子，采下来喂蚕。',
+      kid: '一棵桑树，叶子多得数不清。',
+      adult: '甲骨「桑」象桑树之形，上象枝叶，下象根。',
+      bone: '',
+      gloss: '桑叶养蚕，桑和丝是商人生活里常见的东西。'
+    },
+    {
+      id: 'shu3', glyph: 'shu3', kai: '鼠', pinyin: 'shǔ', volume: '动物',
+      meaning: '老鼠',
+      logic: '画一只老鼠：尖嘴、竖耳、长尾巴，嘴边还有啃下的碎屑。',
+      kid: '一只小老鼠，尖嘴长尾巴，偷偷啃东西。',
+      adult: '甲骨「鼠」象鼠形，突出尖喙、竖耳与长尾。',
+      bone: '',
+      gloss: '甲骨「鼠」重画尖嘴和长尾，一眼就能认出来。'
+    },
+    {
+      id: 'ta', glyph: 'ta', kai: '它', pinyin: 'tā', volume: '动物',
+      meaning: '蛇',
+      logic: '画一条盘起来的蛇：头在上面，身子一圈圈绕下去。',
+      kid: '一条盘着的蛇，古人见了就喊「它」。',
+      adult: '「它」本为蛇的象形字，后借作第三人称代词。',
+      bone: '',
+      gloss: '「它」原来是蛇，后来才借去当「他、它」用。'
+    },
+    {
+      id: 'ji', glyph: 'ji', kai: '鸡', pinyin: 'jī', volume: '动物',
+      meaning: '鸡',
+      logic: '画一只公鸡：头顶高冠，尖嘴长尾，脚上还系着绳。',
+      kid: '一只大公鸡，头顶红冠，尾巴翘得高高的。',
+      adult: '甲骨「鸡」象鸡形，或加声符，本义为鸡。',
+      bone: '',
+      gloss: '「鸡」画的是高冠长尾的鸟，商人已经把它养在家里。'
+    },
+    {
+      id: 'you3', glyph: 'you3', kai: '又', pinyin: 'yòu', volume: '人体',
+      meaning: '右手',
+      logic: '画一只右手：三根手指朝上，手腕在下面。',
+      kid: '一只右手，伸出三根手指。',
+      adult: '甲骨「又」象右手之形，本义为右手，后借为「再、又」。',
+      bone: '',
+      gloss: '「又」本是右手，后来借去表示「再一次」。'
+    },
+    {
+      id: 'zhi3', glyph: 'zhi3', kai: '止', pinyin: 'zhǐ', volume: '人体',
+      meaning: '脚',
+      logic: '画一只脚：三个脚趾朝上，脚掌在下面。',
+      kid: '一只脚丫，脚趾头清清楚楚。',
+      adult: '甲骨「止」象人足之形，本义为脚，后引申为「停止」。',
+      bone: '',
+      gloss: '「止」本是脚，走到头停下，才有了「停止」的意思。'
+    },
+    {
+      id: 'mu3', glyph: 'mu3', kai: '母', pinyin: 'mǔ', volume: '人体',
+      meaning: '母亲',
+      logic: '画一位母亲：跪坐的人形，胸前加两点表示哺育。',
+      kid: '一位妈妈跪坐着，胸前两点是喂孩子的记号。',
+      adult: '甲骨「母」在「女」字胸前加两点，表示哺乳，本义为母亲。',
+      bone: '母辛',
+      gloss: '卜辞称先母为「母辛」「母癸」，那两点就是哺育的记号。'
+    },
+    {
+      id: 'fou', glyph: 'fou', kai: '缶', pinyin: 'fǒu', volume: '器物',
+      meaning: '陶罐',
+      logic: '画一只陶罐：圆肚子、小口，上面还盖着盖。',
+      kid: '一只大肚子陶罐，能装水也能装酒。',
+      adult: '甲骨「缶」象陶器之形，本义为瓦器。',
+      bone: '',
+      gloss: '「缶」是陶土烧的罐子，古人用它盛水盛酒。'
+    },
+    {
+      id: 'li4', glyph: 'li4', kai: '鬲', pinyin: 'lì', volume: '器物',
+      meaning: '三足锅',
+      logic: '画一只三条腿的锅：肚子鼓鼓，腿是空心的。',
+      kid: '一只三条腿的锅，腿中间能塞柴火烧饭。',
+      adult: '甲骨「鬲」象空足炊器之形，三足中空，便于受火。',
+      bone: '',
+      gloss: '「鬲」是煮饭的锅，三条腿之间正好塞柴火。'
+    },
+    {
+      id: 'yu4', glyph: 'yu4', kai: '盂', pinyin: 'yú', volume: '器物',
+      meaning: '大盆',
+      logic: '画一只敞口的大盆：两边有把手，里面能盛水。',
+      kid: '一只大盆，能盛满满一盆水。',
+      adult: '甲骨「盂」象盛水之器，本义为盛液体的器皿。',
+      bone: '',
+      gloss: '「盂」是大口的盆，后来「痰盂」的「盂」也是它。'
+    },
+    {
+      id: 'jia', glyph: 'jia', kai: '家', pinyin: 'jiā', volume: '器物',
+      meaning: '家',
+      logic: '画一座屋子，屋里关着一头猪——有屋有畜，就是家。',
+      kid: '房子里养着一头猪，这就是古人的「家」。',
+      adult: '甲骨「家」从宀从豕，屋下养猪，会「人家、家族」之意。',
+      bone: '',
+      gloss: '屋下有猪才算安家，这是商人对「家」的理解。'
+    },
+    {
+      id: 'gong2', glyph: 'gong2', kai: '宫', pinyin: 'gōng', volume: '器物',
+      meaning: '房屋',
+      logic: '画一座大房子：两间屋子连在一起，屋顶上还有烟囱。',
+      kid: '一座大房子，一间连着一间。',
+      adult: '甲骨「宫」象房屋相连之形，本义为房屋、居室。',
+      bone: '',
+      gloss: '「宫」原本只是房屋，后来才专指帝王的宫殿。'
+    },
+    {
+      id: 'hu4', glyph: 'hu4', kai: '户', pinyin: 'hù', volume: '器物',
+      meaning: '单扇门',
+      logic: '画一扇单开的门：一块门板，一根门轴。',
+      kid: '一扇门板，推开就是家。',
+      adult: '甲骨「户」象单扇门之形，本义为门。',
+      bone: '',
+      gloss: '「户」是单扇的门，一户人家就从这扇门算起。'
     }
   ];
 
@@ -1029,6 +1164,41 @@
       req: [{ id: 'min', n: 13 }],
       pool: ['min', 'min', 'dou', 'gu2', 'tripod', 'zun', 'jue'],
       spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'he2', title: '第三十一契', moves: 30,
+      learn: ['he2', 'mai', 'sang'],
+      req: [{ id: 'he2', n: 12 }],
+      pool: ['he2', 'he2', 'mai', 'sang', 'shui', 'tu', 'ri'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'shu3', title: '第三十二契', moves: 30,
+      learn: ['shu3', 'ta', 'ji'],
+      req: [{ id: 'shu3', n: 12 }],
+      pool: ['shu3', 'shu3', 'ta', 'ji', 'ma', 'quangou', 'niao'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'you3', title: '第三十三契', moves: 32,
+      learn: ['you3', 'zhi3', 'mu3'],
+      req: [{ id: 'you3', n: 13 }],
+      pool: ['you3', 'you3', 'zhi3', 'mu3', 'ren', 'mueye', 'kou'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'fou', title: '第三十四契', moves: 32,
+      learn: ['fou', 'li4', 'yu4'],
+      req: [{ id: 'fou', n: 13 }],
+      pool: ['fou', 'fou', 'li4', 'yu4', 'min', 'dou', 'tripod'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'jia', title: '第三十五契', moves: 32,
+      learn: ['jia', 'gong2', 'hu4'],
+      req: [{ id: 'jia', n: 13 }],
+      pool: ['jia', 'jia', 'gong2', 'hu4', 'gate', 'robe', 'zhou'],
+      spirit: ['ri', 'yue', 'tu']
     }
   ];
 
@@ -1138,6 +1308,15 @@
         '一件鼎、一只爵，铸上铭文，就成了家族的凭据。',
         '所以「尊」「爵」「鼎」这些字，起初都只是器物。',
         '识得九十字，你已能读懂不少青铜器上的句子。'
+      ]
+    },
+    {
+      id: 'n13', title: '屋下有猪', need: 105,
+      body: [
+        '甲骨文的「家」，是屋顶下面画一头猪。',
+        '商人把猪养在屋里，有屋有畜，才算安顿下来。',
+        '「宫」是相连的房屋，「户」是单扇的门。',
+        '识得一百零五字，屋子、田地、牲畜，你都能叫出名字了。'
       ]
     }
   ];

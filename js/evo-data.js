@@ -90,7 +90,22 @@
     you: 'bs',
     min: 'bs',
     dou: 'bs',
-    gu2: 'bs'
+    gu2: 'bs',
+    he2: 'bs',
+    mai: 'bs',
+    sang: 's',
+    shu3: 's',
+    ta: 'bs',
+    ji: 'bs',
+    you3: 'bs',
+    zhi3: 'bs',
+    mu3: 'bs',
+    fou: 'bs',
+    li4: 'bs',
+    yu4: 'bs',
+    jia: 'bs',
+    gong2: 'bs',
+    hu4: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;

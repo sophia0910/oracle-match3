@@ -1,4 +1,4 @@
-/* 甲骨消消乐 · 微信小游戏主程序（三十契垂直切片） */
+/* 甲骨消消乐 · 微信小游戏主程序（三十五契垂直切片） */
 (function () {
   'use strict';
 
@@ -3230,7 +3230,7 @@
 
   function drawNoteDetail(note) {
     if (!note) return;
-    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三'];
     var idx = Data.NOTES.indexOf(note);
 
     ctx.fillStyle = 'rgba(42,32,20,0.44)';
@@ -3283,7 +3283,7 @@
   }
 
   function drawNotes(w, x, y) {
-    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三'];
     var grid = noteGridLayout();
     var cols = grid.cols;
     var gap = 8;
