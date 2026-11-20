@@ -1086,6 +1086,276 @@
       adult: '甲骨「辛」象凿具之形，本义为凿子，引申为辛苦。',
       bone: '',
       gloss: '「辛」本是凿子，凿东西费力，才有了「辛苦」。'
+    },
+    {
+      id: 'he', glyph: 'he', kai: '河', pinyin: 'hé', volume: '自然',
+      meaning: '河流',
+      logic: '画一道水，旁边再加一个「可」，专指黄河那样的大河。',
+      kid: '一条大水，哗哗地向东流，这就是「河」。',
+      adult: '甲骨「河」从水，可声，卜辞中多指河神，常见「燎于河」之辞。',
+      bone: '燎于河',
+      gloss: '在河边燃柴燎祭。'
+    },
+    {
+      id: 'ye3', glyph: 'ye3', kai: '野', pinyin: 'yě', volume: '自然',
+      meaning: '郊野',
+      logic: '一片林子，下面垫着土，就是城外的野地。',
+      kid: '树林连着土地，城外空阔的地方就是「野」。',
+      adult: '甲骨「野」作「埜」，从林从土，会郊野之意。',
+      bone: '',
+      gloss: '「野」是林与土：城邑之外，草木土地相连。'
+    },
+    {
+      id: 'yang2', glyph: 'yang2', kai: '阳', pinyin: 'yáng', volume: '自然',
+      meaning: '向阳',
+      logic: '左边是山坡，右边是太阳，太阳照到的地方就是阳。',
+      kid: '太阳照在山坡上，暖暖的，就是「阳」。',
+      adult: '甲骨「阳」从阜从日，会日出向阳之意。',
+      bone: '',
+      gloss: '山南水北为阳，太阳照得到的那一面就叫「阳」。'
+    },
+    {
+      id: 'shu2', glyph: 'shu2', kai: '蜀', pinyin: 'shǔ', volume: '动物',
+      meaning: '野蚕',
+      logic: '上面一只大眼睛，下面一条蜷曲的虫身，就是野蚕「蜀」。',
+      kid: '一条胖胖的虫子，头上顶着一只大眼睛。',
+      adult: '甲骨「蜀」上为目、下为虫身，象野蚕之形；卜辞中亦用为方国名。',
+      bone: '征蜀',
+      gloss: '征伐蜀方。'
+    },
+    {
+      id: 'mi2', glyph: 'mi2', kai: '麋', pinyin: 'mí', volume: '动物',
+      meaning: '麋鹿',
+      logic: '画一只鹿，头上加一只大眼睛，就是角大眼大的麋鹿。',
+      kid: '一只大角鹿，眼睛圆圆的，叫麋鹿。',
+      adult: '甲骨「麋」从鹿，上加目形，以鹿角与目为特征。',
+      bone: '获麋',
+      gloss: '田猎获得麋鹿。'
+    },
+    {
+      id: 'zhi4', glyph: 'zhi4', kai: '雉', pinyin: 'zhì', volume: '动物',
+      meaning: '野鸡',
+      logic: '一只短尾鸟，旁边插一支箭，古人用箭射雉。',
+      kid: '一只花野鸡，扑棱棱飞起来。',
+      adult: '甲骨「雉」从隹（短尾鸟）从矢，矢亦表声。',
+      bone: '',
+      gloss: '「雉」是隹加矢：野鸡飞得快，要用箭去射。'
+    },
+    {
+      id: 'fu', glyph: 'fu', kai: '父', pinyin: 'fù', volume: '人体',
+      meaning: '父亲',
+      logic: '一只手举着一把石斧，家里拿斧头做主的人就是父。',
+      kid: '爸爸举起斧头干活，这就是「父」。',
+      adult: '甲骨「父」从又（手）持斧，会手持斧具之意，后指父亲。',
+      bone: '父乙',
+      gloss: '祭祀名乙的先父。'
+    },
+    {
+      id: 'li', glyph: 'li', kai: '力', pinyin: 'lì', volume: '人体',
+      meaning: '力气',
+      logic: '画一把翻土的耒耜，用它耕地最费力气。',
+      kid: '一把翻土的工具，用它干活要出大力气。',
+      adult: '甲骨「力」象耒耜之形，本义为农具，引申为力气。',
+      bone: '',
+      gloss: '「力」本是农具，耕地要使力，才有了力气的意思。'
+    },
+    {
+      id: 'nan', glyph: 'nan', kai: '男', pinyin: 'nán', volume: '人体',
+      meaning: '男子',
+      logic: '上面是田，下面是力，在田里出力气的人就是男。',
+      kid: '在田里用力干活的人，就是「男」。',
+      adult: '甲骨「男」从田从力，会田中用力耕作之意。',
+      bone: '',
+      gloss: '田加力就是男：古时男子在田里出力。'
+    },
+    {
+      id: 'jing2', glyph: 'jing2', kai: '井', pinyin: 'jǐng', volume: '器物',
+      meaning: '水井',
+      logic: '四根木条交叉成井栏，中间就是井口。',
+      kid: '木头交叉围起来，下面是一口井。',
+      adult: '甲骨「井」象井栏交木之形，本义为水井。',
+      bone: '',
+      gloss: '「井」画的是井口的木栏，后来才引申为井田。'
+    },
+    {
+      id: 'jin2', glyph: 'jin2', kai: '巾', pinyin: 'jīn', volume: '器物',
+      meaning: '布巾',
+      logic: '一块布搭在架子上，两边垂下来，就是巾。',
+      kid: '一块布垂下来，可以擦手擦脸。',
+      adult: '甲骨「巾」象布巾下垂之形，本义为佩巾。',
+      bone: '',
+      gloss: '「巾」是垂下来的布，带巾旁的字多与布帛有关。'
+    },
+    {
+      id: 'zhong', glyph: 'zhong', kai: '中', pinyin: 'zhōng', volume: '器物',
+      meaning: '旗杆',
+      logic: '一根旗杆，上下都挂着飘带，立在正中。',
+      kid: '一根高高的旗杆，飘带在风里摆。',
+      adult: '甲骨「中」象旗杆上下有旒之形，本义为旗，引申为中央。',
+      bone: '',
+      gloss: '「中」本是立在中间的旗，后来才有中间的意思。'
+    },
+    {
+      id: 'gao', glyph: 'gao', kai: '高', pinyin: 'gāo', volume: '器物',
+      meaning: '高台',
+      logic: '下面高高的台基，上面一座尖顶的屋子，就是高。',
+      kid: '一座建在高台上的房子，高高在上。',
+      adult: '甲骨「高」象高台建筑之形，上为屋顶，下为台基。',
+      bone: '',
+      gloss: '「高」画的是建在高台上的屋子，所以有高义。'
+    },
+    {
+      id: 'jing3', glyph: 'jing3', kai: '京', pinyin: 'jīng', volume: '器物',
+      meaning: '高丘',
+      logic: '一座高高的土丘，上面还盖着房子，就是京。',
+      kid: '高高的土堆上盖着房子，就是「京」。',
+      adult: '甲骨「京」象高丘之上筑屋之形，本义为高丘、大邑。',
+      bone: '',
+      gloss: '「京」是建在高丘上的大屋，后来才指京城。'
+    },
+    {
+      id: 'xing2', glyph: 'xing2', kai: '行', pinyin: 'xíng', volume: '器物',
+      meaning: '道路',
+      logic: '画一个十字路口，四条路通向四方。',
+      kid: '四条路交叉在一起，就是路口。',
+      adult: '甲骨「行」象四通之道路，本义为道路，引申为行走。',
+      bone: '',
+      gloss: '「行」本是十字路口，人在路上走，才有了行走。'
+    },
+    {
+      id: 'dong2', glyph: 'dong2', kai: '东', pinyin: 'dōng', volume: '自然',
+      meaning: '东方',
+      logic: '画一只两头扎紧的口袋，古人借它表示东方。',
+      kid: '一个扎紧口的口袋，古人用它表示东边。',
+      adult: '甲骨「东」象两端扎束的口袋，借为东方之东；旧说谓日升木中。',
+      bone: '东方曰析',
+      gloss: '东方之神名叫析。'
+    },
+    {
+      id: 'nan2', glyph: 'nan2', kai: '南', pinyin: 'nán', volume: '自然',
+      meaning: '南方',
+      logic: '画一件古乐器，上小下大，古人借它表示南方。',
+      kid: '一件上小下大的古乐器，古人用它表示南边。',
+      adult: '甲骨「南」象古代乐器之形，借以表示南方。',
+      bone: '',
+      gloss: '「南」本是乐器，后来借去表示方向。'
+    },
+    {
+      id: 'xi2', glyph: 'xi2', kai: '西', pinyin: 'xī', volume: '自然',
+      meaning: '西方',
+      logic: '画一只鸟巢，日落西山时鸟儿归巢，就用它表示西。',
+      kid: '树上的鸟窝，太阳落山时鸟儿都回巢了。',
+      adult: '甲骨「西」象鸟巢之形，日落鸟归巢，借为西方之西。',
+      bone: '',
+      gloss: '「西」本是鸟巢，日落归巢，就借去表示西边。'
+    },
+    {
+      id: 'que', glyph: 'que', kai: '雀', pinyin: 'què', volume: '动物',
+      meaning: '小雀',
+      logic: '上面一个「小」，下面一只短尾鸟，就是小雀。',
+      kid: '一只小小鸟，在枝头上蹦蹦跳跳。',
+      adult: '甲骨「雀」从小从隹，会小鸟之意。',
+      bone: '',
+      gloss: '小加隹就是雀：身量小小的鸟。'
+    },
+    {
+      id: 'tun', glyph: 'tun', kai: '豚', pinyin: 'tún', volume: '动物',
+      meaning: '小猪',
+      logic: '画一头猪，身子圆滚滚，肚子下面还有肉，就是小猪豚。',
+      kid: '一头圆滚滚的小猪，走路一扭一扭。',
+      adult: '甲骨「豚」从豕从肉，本义为小猪。',
+      bone: '',
+      gloss: '「豚」是豕旁加肉：养肥了的小猪。'
+    },
+    {
+      id: 'chan', glyph: 'chan', kai: '蝉', pinyin: 'chán', volume: '动物',
+      meaning: '知了',
+      logic: '画一只蝉：大大的眼睛，薄薄的翅膀，趴在树上。',
+      kid: '一只知了，趴在树上「知了知了」地叫。',
+      adult: '甲骨「蝉」象蝉形，突出其大目与薄翼。',
+      bone: '',
+      gloss: '蝉就是知了，古人早已把它画进了字里。'
+    },
+    {
+      id: 'tian2', glyph: 'tian2', kai: '天', pinyin: 'tiān', volume: '人体',
+      meaning: '头顶',
+      logic: '一个正面站立的人，头顶上画一横，指出人的头顶。',
+      kid: '一个人站得直直的，头顶上画一道，就是「天」。',
+      adult: '甲骨「天」在「大」（人）头上加一横，指人之顶，本义为头顶。',
+      bone: '天邑商',
+      gloss: '商王朝的大邑。'
+    },
+    {
+      id: 'bu', glyph: 'bu', kai: '步', pinyin: 'bù', volume: '人体',
+      meaning: '行走',
+      logic: '画一前一后两只脚印，一步一步往前走。',
+      kid: '两只脚印一前一后，就是在走路。',
+      adult: '甲骨「步」象前后两止（脚）相承，会行走之意。',
+      bone: '',
+      gloss: '两只脚一前一后，就是「步」。'
+    },
+    {
+      id: 'zou', glyph: 'zou', kai: '走', pinyin: 'zǒu', volume: '人体',
+      meaning: '奔跑',
+      logic: '一个人甩开双臂，脚下生风，就是跑。',
+      kid: '一个人甩着胳膊跑起来，就是「走」。',
+      adult: '甲骨「走」从夭（摆臂的人）从止，会奔跑之意，古义为跑。',
+      bone: '',
+      gloss: '古时的「走」是跑，慢慢走才叫「行」。'
+    },
+    {
+      id: 'mi', glyph: 'mi', kai: '米', pinyin: 'mǐ', volume: '器物',
+      meaning: '米粒',
+      logic: '中间一横一竖，四周围着米粒，就是散落的米。',
+      kid: '一粒一粒的白米，撒在簸箕里。',
+      adult: '甲骨「米」象米粒散布之形，中作十字，四周点粒。',
+      bone: '',
+      gloss: '「米」画的是散开的米粒，后来才专指稻米。'
+    },
+    {
+      id: 'dou3', glyph: 'dou3', kai: '斗', pinyin: 'dǒu', volume: '器物',
+      meaning: '量斗',
+      logic: '一把带长柄的勺子，用来舀粮量米。',
+      kid: '一把大勺子，舀米舀水都靠它。',
+      adult: '甲骨「斗」象带柄的量器之形，本义为舀酒量粮的斗。',
+      bone: '',
+      gloss: '「斗」是带柄的量器，北斗七星就像一把斗。'
+    },
+    {
+      id: 'pin', glyph: 'pin', kai: '品', pinyin: 'pǐn', volume: '器物',
+      meaning: '众多',
+      logic: '三张嘴摆在一起，表示东西很多、一样一样地品。',
+      kid: '三个小口排排坐，表示东西很多。',
+      adult: '甲骨「品」从三口，会众多之意，卜辞中亦用为祭名。',
+      bone: '',
+      gloss: '三个口就是「品」：众物罗列，逐一品尝。'
+    },
+    {
+      id: 'yi', glyph: 'yi', kai: '邑', pinyin: 'yì', volume: '器物',
+      meaning: '城邑',
+      logic: '上面一座城，下面一个人跪坐着，就是人聚居的邑。',
+      kid: '一座小城，城里住着人，就是「邑」。',
+      adult: '甲骨「邑」上为城邑之形，下为跪坐之人，会城邑之意。',
+      bone: '作邑',
+      gloss: '营建城邑。'
+    },
+    {
+      id: 'gong3', glyph: 'gong3', kai: '工', pinyin: 'gōng', volume: '器物',
+      meaning: '工具',
+      logic: '画一把带柄的工具，上横下横，中间是柄。',
+      kid: '一把干活用的工具，方方正正的。',
+      adult: '甲骨「工」象工具之形，本义为工具，引申为工匠。',
+      bone: '',
+      gloss: '「工」本是工具，拿工具的人就是工匠。'
+    },
+    {
+      id: 'sheng', glyph: 'sheng', kai: '升', pinyin: 'shēng', volume: '器物',
+      meaning: '量升',
+      logic: '一把小勺伸进容器里舀东西，舀一下就是一升。',
+      kid: '用小勺舀一下，就是一升米。',
+      adult: '甲骨「升」象以斗挹取之形，本义为量器，引申为上升。',
+      bone: '',
+      gloss: '「升」是舀取的量器，一升就是舀一下。'
     }
   ];
 
@@ -1369,6 +1639,76 @@
       req: [{ id: 'si', n: 13 }],
       pool: ['si', 'si', 'peng', 'xin2', 'knife', 'daggeraxe', 'arrow'],
       spirit: ['ri', 'yue', 'shan']
+    },
+    {
+      char: 'he', title: '第四十一契', moves: 30,
+      learn: ['he', 'ye3', 'yang2'],
+      req: [{ id: 'he', n: 12 }],
+      pool: ['he', 'he', 'ye3', 'yang2', 'shui', 'tu', 'ri'],
+      spirit: ['ri', 'shui', 'tu']
+    },
+    {
+      char: 'shu2', title: '第四十二契', moves: 30,
+      learn: ['shu2', 'mi2', 'zhi4'],
+      req: [{ id: 'shu2', n: 12 }],
+      pool: ['shu2', 'shu2', 'mi2', 'zhi4', 'deer', 'ma', 'niao'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'fu', title: '第四十三契', moves: 32,
+      learn: ['fu', 'li', 'nan'],
+      req: [{ id: 'fu', n: 13 }],
+      pool: ['fu', 'fu', 'li', 'nan', 'ren', 'mueye', 'kou'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'jing2', title: '第四十四契', moves: 32,
+      learn: ['jing2', 'jin2', 'zhong'],
+      req: [{ id: 'jing2', n: 13 }],
+      pool: ['jing2', 'jing2', 'jin2', 'zhong', 'fou', 'min', 'dou'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'gao', title: '第四十五契', moves: 32,
+      learn: ['gao', 'jing3', 'xing2'],
+      req: [{ id: 'gao', n: 13 }],
+      pool: ['gao', 'gao', 'jing3', 'xing2', 'jia', 'gong2', 'hu4'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'dong2', title: '第四十六契', moves: 30,
+      learn: ['dong2', 'nan2', 'xi2'],
+      req: [{ id: 'dong2', n: 12 }],
+      pool: ['dong2', 'dong2', 'nan2', 'xi2', 'ri', 'mu', 'shui'],
+      spirit: ['ri', 'yue', 'mu']
+    },
+    {
+      char: 'que', title: '第四十七契', moves: 30,
+      learn: ['que', 'tun', 'chan'],
+      req: [{ id: 'que', n: 12 }],
+      pool: ['que', 'que', 'tun', 'chan', 'niao', 'zhui', 'ma'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'tian2', title: '第四十八契', moves: 32,
+      learn: ['tian2', 'bu', 'zou'],
+      req: [{ id: 'tian2', n: 13 }],
+      pool: ['tian2', 'tian2', 'bu', 'zou', 'ren', 'da', 'zhi3'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'mi', title: '第四十九契', moves: 32,
+      learn: ['mi', 'dou3', 'pin'],
+      req: [{ id: 'mi', n: 13 }],
+      pool: ['mi', 'mi', 'dou3', 'pin', 'he2', 'mai', 'wu'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'yi', title: '第五十契', moves: 40,
+      learn: ['yi', 'gong3', 'sheng'],
+      req: [{ id: 'yi', n: 16 }],
+      pool: ['yi', 'yi', 'gong3', 'sheng', 'min', 'dou', 'jing2'],
+      spirit: ['ri', 'yue', 'tu']
     }
   ];
 
@@ -1496,6 +1836,24 @@
         '春种、秋收、冬藏，字里就藏着这些日子。',
         '贝是商代的钱，两串贝叫一朋，朋也就是「同串」的人。',
         '识得一百二十字，一年四季、人情往来，你都能写出来了。'
+      ]
+    },
+    {
+      id: 'n15', title: '路与城', need: 135,
+      body: [
+        '「行」在甲骨里是一道路口，四方都通。',
+        '「邑」是城，上面一座城，下面一个人跪坐着。',
+        '「京」是建在高丘上的大屋，「高」是建在高台上的房子。',
+        '路、井、城、屋，商人的世界就这样一点点搭起来。'
+      ]
+    },
+    {
+      id: 'n16', title: '五十契之后', need: 150,
+      body: [
+        '五十契走完，你已识得一百五十个甲骨字。',
+        '这些字里，有太阳月亮，有飞鸟走兽，也有刀斧鼎彝。',
+        '今天约十五万片甲骨散在各地，仍有近一半的字没有认出来。',
+        '往后的字，就要靠下一代的识字人去骨头上找了。'
       ]
     }
   ];
