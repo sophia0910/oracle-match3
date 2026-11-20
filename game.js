@@ -1328,21 +1328,24 @@
   function drawHeader() {
     var l = layout;
 
-    setFont(19, 'bold');
-    var titleW = ctx.measureText('甲骨消消乐').width;
-    text('甲骨消消乐', l.x, l.top + 15, 19, C.ink, 'left', 'middle', 'bold');
+    /* 首页大标题在卡片里，顶部这行小标题就不画，免得长屏上出现两个「甲骨消消乐」 */
+    if (state.screen !== 'start') {
+      setFont(19, 'bold');
+      var titleW = ctx.measureText('甲骨消消乐').width;
+      text('甲骨消消乐', l.x, l.top + 15, 19, C.ink, 'left', 'middle', 'bold');
 
-    var sx = l.x + titleW + 8;
-    var sy = l.top + 3;
-    ctx.save();
-    ctx.shadowColor = 'rgba(168,58,42,0.32)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
-    rr(sx, sy, 22, 22, 4);
-    ctx.fillStyle = C.red;
-    ctx.fill();
-    ctx.restore();
-    text('契', sx + 11, sy + 12, 13, '#F7EBD6', 'center', 'middle', 'bold');
+      var sx = l.x + titleW + 8;
+      var sy = l.top + 3;
+      ctx.save();
+      ctx.shadowColor = 'rgba(168,58,42,0.32)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      rr(sx, sy, 22, 22, 4);
+      ctx.fillStyle = C.red;
+      ctx.fill();
+      ctx.restore();
+      text('契', sx + 11, sy + 12, 13, '#F7EBD6', 'center', 'middle', 'bold');
+    }
 
     if (state.screen === 'play') {
       var rw = 50, rh = 24;
@@ -1387,8 +1390,10 @@
       ui.feedback = null;
 
       if (state.screen === 'start') {
+        /* 与卡片右缘对齐，不再按内容列外飘 */
+        var cardW = Math.min(l.contentW - 8, 332);
         var fw = 44, fh = 24;
-        var fx = l.x + l.contentW - fw;
+        var fx = (viewW + cardW) / 2 - fw;
         var fy = l.top + 3;
         rr(fx, fy, fw, fh, 12);
         ctx.fillStyle = 'rgba(255,250,238,0.5)';
@@ -2028,7 +2033,8 @@
   function drawFontToggle(right, top) {
     var fw = 52, fh = 24;
     var bx = right - fw;
-    ui.fontPill = { x: bx - 4, y: top - 6, w: fw + 8, h: fh + 12 };
+    /* 视觉尺寸不变，热区补到 64×44，够 44px 触控线 */
+    ui.fontPill = { x: bx - 6, y: top - 10, w: fw + 12, h: 44 };
     var on = progress.bigText;
     rr(bx, top, fw, fh, fh / 2);
     ctx.fillStyle = on ? 'rgba(168,58,42,0.10)' : 'rgba(255,250,238,0.45)';
