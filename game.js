@@ -1987,7 +1987,7 @@
 
     var learned = progress.learned.length;
     var inviting = !!challenge && !challenge.done;
-    var infoY = y + 206 + g * 1.6;
+    var infoY = y + 206 + g * 1.8;
     var infoLine = fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
       progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40);
     if (inviting) {
@@ -2005,7 +2005,7 @@
 
     var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
     var allDone = progress.unlocked >= LEVEL_COUNT;
-    var primaryY = y + 228 + g * 2.5;
+    var primaryY = y + 228 + g * 2.1;
     ui.primary = { x: x + 20, y: primaryY, w: w - 40, h: 50 };
     if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title, { size: 15 });
     else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
@@ -2024,9 +2024,9 @@
 
     /* 十契点阵：一眼看出走到第几契；页脚随卡片高度往下摊 */
     var metaY = y + h - 24;
-    var divY = y + 350 + g * 3;
+    var divY = y + 350 + g * 2.7;
     var dotsY = divY + 20;
-    var foot1Y = y + 406 + g * 3.5;
+    var foot1Y = y + 406 + g * 3.4;
     var foot2Y = foot1Y + 20;
 
     ctx.beginPath();
