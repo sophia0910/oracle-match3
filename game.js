@@ -34,11 +34,6 @@
     cream: '#FBF3E2'
   };
 
-  var MODE_DESC = {
-    kid: '字卡只讲一句比喻，多给四步，停久了会自己亮出提示。',
-    adult: '字卡给卜辞与字源，步数收紧，不主动提示。'
-  };
-
   /* ---------------- 环境与画布 ---------------- */
 
   var canvas, ctx, viewW, viewH, dpr, safeTop, layout;
@@ -86,7 +81,7 @@
     var panelY = top + headerH + 6;
     var panelH = 88;
     var boardTop = panelY + panelH + 12;
-    var avail = viewH - boardTop - 40;
+    var avail = viewH - boardTop - 68;
     var cell = Math.floor(Math.min((contentW - 16) / 8, avail / 8));
     cell = Math.max(22, Math.min(52, cell));
     var boardSize = cell * 8 + 16;
@@ -99,7 +94,7 @@
       top: top,
       panel: { x: x, y: panelY, w: contentW, h: panelH },
       board: { x: boardX, y: boardY, size: boardSize, cell: cell, pad: 8 },
-      footerY: boardY + boardSize + 18
+      footerY: boardY + boardSize + 14
     };
   }
 
@@ -135,10 +130,9 @@
     } catch (e) { /* 忽略存储异常 */ }
   }
 
-  var progress = { mode: 'kid', unlocked: 1, learned: [], bigText: false };
+  var progress = { unlocked: 1, learned: [], bigText: false };
   var stored = loadProgress();
   if (stored) {
-    if (stored.mode === 'kid' || stored.mode === 'adult') progress.mode = stored.mode;
     if (stored.bigText === true) progress.bigText = true;
     if (typeof stored.unlocked === 'number') {
       progress.unlocked = Math.max(1, Math.min(LEVEL_COUNT, Math.floor(stored.unlocked)));
@@ -224,7 +218,6 @@
     noteSel: null,
     posterCanvas: null,
     evo: null,
-    mode: progress.mode,
     levelIndex: 0,
     grid: null,
     tiles: [],
@@ -250,6 +243,7 @@
     idleTime: 0,
     time: 0,
     cardT: 0,
+    cardSrc: false,
     result: null,
     quiz: null,
     particles: [],
@@ -267,9 +261,9 @@
     primary: null,
     secondary: null,
     share: null,
-    modeKid: null,
-    modeAdult: null,
     fontPill: null,
+    hint: null,
+    cardSrc: null,
     optA: null,
     optB: null,
     library: null,
@@ -521,7 +515,7 @@
       state.collected[lv.req[i].id] = 0;
       state.pulse[lv.req[i].id] = 0;
     }
-    state.moves = lv.moves + 2 + (state.mode === 'kid' ? 4 : 0);
+    state.moves = lv.moves + 4;
 
     var pool = levelPool();
     var grid = Core.createGrid(Math.random, pool);
@@ -556,12 +550,6 @@
       return;
     }
     startLevel(state.levelIndex + 1);
-  }
-
-  function setMode(mode) {
-    state.mode = mode;
-    progress.mode = mode;
-    saveProgress();
   }
 
   function goHome() {
@@ -880,6 +868,7 @@
       Sfx.play('win');
       state.screen = 'card';
       state.cardT = 0;
+      state.cardSrc = false;
       vibrate();
       return;
     }
@@ -965,7 +954,6 @@
       text: '',
       screen: state.screen,
       level: lv ? lv.title : '',
-      mode: state.mode,
       quick: !!state.quick,
       learned: progress.learned.length,
       model: sys.model || '',
@@ -1113,12 +1101,11 @@
       Sfx.play('right');
       var t = state.tiles[q.tileIndex];
       if (t) t.spirit = null;
-      var add = state.mode === 'kid' ? 3 : 2;
-      state.moves += add;
-      showToast('答对 · 步数 +' + add);
+      state.moves += 3;
+      showToast('答对 · 步数 +3');
     } else {
       Sfx.play('wrong');
-      showToast(state.mode === 'kid' ? '再想想，它就藏在字形里' : '未合，重观其形');
+      showToast('未合，再观其形');
     }
     state.quiz = null;
     state.screen = 'play';
@@ -1242,7 +1229,7 @@
 
     if (state.phase === 'idle') {
       state.idleTime += dt;
-      var hintDelay = state.mode === 'kid' ? 5 : 8.5;
+      var hintDelay = 7;
       if (state.idleTime > hintDelay && !state.hint) {
         var mv = Core.findPossibleMove(state.grid);
         if (mv) state.hint = { a: mv[0], b: mv[1] };
@@ -1791,13 +1778,39 @@
   }
 
   function drawFooter() {
-    var lv = levelConfig();
-    var tip = state.mode === 'kid'
-      ? '交换相邻甲骨 · 集齐部件，字就刻成了'
-      : '三枚同形即消 · 集齐部件以成字';
-    if (state.screen === 'play' && layout.footerY + 10 < viewH) {
-      text(tip, viewW / 2, layout.footerY + 8, 10, 'rgba(90,74,52,0.5)', 'center', 'middle');
+    ui.hint = null;
+    if (state.screen !== 'play') return;
+
+    var hw = 64, hh = 26;
+    var hx = layout.x + layout.contentW - hw;
+    var hy = layout.footerY;
+    rr(hx, hy, hw, hh, hh / 2);
+    ctx.fillStyle = 'rgba(255,250,238,0.66)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(168,58,42,0.34)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text('提示', hx + hw / 2, hy + hh / 2 + 0.5, 11.5, C.red, 'center', 'middle', 'bold');
+    ui.hint = { x: hx - 4, y: hy - 4, w: hw + 8, h: hh + 8 };
+
+    var tip = fitText('交换相邻甲骨 · 三枚同形即消 · 集齐部件以成字', 9.5,
+      layout.contentW - hw - 10);
+    text(tip, layout.x, hy + hh / 2 + 0.5, 9.5, 'rgba(90,74,52,0.5)', 'left', 'middle');
+  }
+
+  /* 卡住时自己点一下：亮出可消的一对，不扣步数 */
+  function requestHint() {
+    if (state.screen !== 'play' || state.phase !== 'idle') return;
+    if (!state.grid) return;
+    var mv = Core.findPossibleMove(state.grid);
+    if (!mv) {
+      showToast('已无可用步，正在重排');
+      reshuffle();
+      return;
     }
+    state.hint = { a: mv[0], b: mv[1] };
+    state.idleTime = 0;
+    Sfx.play('select');
   }
 
   function drawCard(x, y, w, h) {
@@ -1901,7 +1914,7 @@
   function drawStart() {
     var cx = viewW / 2;
     var w = Math.min(layout.contentW - 8, 332);
-    var h = 500;
+    var h = 400;
     var x = cx - w / 2;
     var y = Math.max(safeTop + 12, viewH / 2 - h / 2);
 
@@ -1911,7 +1924,7 @@
     text('甲骨消消乐', cx, y + 68, 26, C.ink, 'center', 'middle', 'bold');
     text('契于龟甲 · 消而成文', cx, y + 94, 11.5, C.inkSoft, 'center', 'middle');
 
-    /* 字号是设置项，单放右上角；与「童蒙 / 雅士」并排会被当成第三档 */
+    /* 字号是设置项，单放右上角，不占正文的按钮行 */
     drawFontToggle(x + w - 12, y + 14);
 
     var demoIdx = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
@@ -1960,71 +1973,45 @@
     text(demoCh.kai, px + pw - 34, py + 20, 20, C.gold, 'center', 'middle', 'bold');
     text('点开细看', px + pw - 34, py + 38, 7.5, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
-    var pillW = 86, pillH = 34, gap = 10;
-    var totalW = pillW * 2 + gap;
-    var px0 = cx - totalW / 2;
-    var py0 = y + 170;
-
-    ui.modeKid = { x: px0, y: py0, w: pillW, h: pillH };
-    ui.modeAdult = { x: px0 + pillW + gap, y: py0, w: pillW, h: pillH };
-
-    drawModePill(ui.modeKid, '童蒙', state.mode === 'kid');
-    drawModePill(ui.modeAdult, '雅士', state.mode === 'adult');
-
-    var desc = wrap(MODE_DESC[state.mode], w - 64, 11);
-    drawLines(desc, cx, y + 226, 18, 11, 'rgba(58,45,30,0.66)');
-
     var learned = progress.learned.length;
     var inviting = !!challenge && !challenge.done;
+    var infoLine = fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
+      progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40);
     if (inviting) {
       var clv = Data.LEVELS[challenge.level];
       var cch = Data.char(clv.char);
       var invite = challenge.step
         ? '好友在「' + clv.title + ' · ' + cch.kai + '」用 ' + challenge.step + ' 步成文'
         : '好友邀你共契「' + clv.title + ' · ' + cch.kai + '」';
-      text(invite, cx, y + 288, 11, C.gold, 'center', 'middle', 'bold');
-      text(fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
-        progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 10, w - 40),
-        cx, y + 308, 10, 'rgba(90,74,52,0.5)', 'center', 'middle');
+      text(invite, cx, y + 184, 11, C.gold, 'center', 'middle', 'bold');
+      text(fitText(infoLine, 10, w - 40), cx, y + 204, 10,
+        'rgba(90,74,52,0.5)', 'center', 'middle');
     } else {
-      text(fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
-        progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40),
-        cx, y + 292, 11, C.gold, 'center', 'middle', 'bold');
+      text(infoLine, cx, y + 192, 11, C.gold, 'center', 'middle', 'bold');
     }
 
     var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
     var allDone = progress.unlocked >= LEVEL_COUNT;
-    ui.primary = { x: cx - 100, y: y + 322, w: 200, h: 46 };
+    ui.primary = { x: cx - 100, y: y + 222, w: 200, h: 46 };
     if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title);
     else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」');
     else drawButton(ui.primary, '继续「' + Data.LEVELS[nextIndex].title + '」');
 
     var bw = 98, bgap = 8;
     var bx0 = cx - (bw * 3 + bgap * 2) / 2;
-    ui.pick = { x: bx0, y: y + 378, w: bw, h: 38 };
-    ui.library = { x: bx0 + bw + bgap, y: y + 378, w: bw, h: 38 };
-    ui.quick = { x: bx0 + (bw + bgap) * 2, y: y + 378, w: bw, h: 38 };
+    ui.pick = { x: bx0, y: y + 282, w: bw, h: 38 };
+    ui.library = { x: bx0 + bw + bgap, y: y + 282, w: bw, h: 38 };
+    ui.quick = { x: bx0 + (bw + bgap) * 2, y: y + 282, w: bw, h: 38 };
     drawButton(ui.pick, '选契', { ghost: true, size: 12.5 });
     drawButton(ui.library, '字库', { ghost: true, size: 12.5 });
     drawButton(ui.quick, '快契', { ghost: true, size: 12.5 });
 
-    text('字库随时可翻 · 不必先通关', cx, y + 432, 10,
+    text('字库随时可翻 · 不必先通关', cx, y + 342, 10,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text('每契约两三分钟 · 共十契三十字', cx, y + 452, 9.5,
+    text('每契约两三分钟 · 共十契三十字', cx, y + 360, 9.5,
       'rgba(90,74,52,0.4)', 'center', 'middle');
-    text('字形源自汉典 · CC0', cx, y + 470, 9,
+    text('字形源自汉典 · CC0', cx, y + 378, 9,
       'rgba(90,74,52,0.34)', 'center', 'middle');
-  }
-
-  function drawModePill(rect, label, active, fs) {
-    rr(rect.x, rect.y, rect.w, rect.h, rect.h / 2);
-    ctx.fillStyle = active ? C.red : 'rgba(255,250,238,0.72)';
-    ctx.fill();
-    ctx.strokeStyle = active ? 'rgba(150,50,35,0.5)' : 'rgba(140,106,63,0.35)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, fs || 14,
-      active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
   }
 
   /* 右上角「大字」：虚线细边的小开关，样式刻意区别于实心胶囊 */
@@ -2205,7 +2192,7 @@
     posterText(p, ch.pinyin, 540 + 88, 712, 27, 'rgba(58,45,30,0.5)', 'left', 'middle');
     posterText(p, ch.meaning, 540, 818, 40, C.ink, 'center', 'middle', 'bold');
 
-    var copy = state.mode === 'kid' ? ch.kid : ch.adult;
+    var copy = ch.kid;
     var lines = posterWrap(p, copy, 800, 25);
     if (lines.length > 2) lines = lines.slice(0, 2);
     for (var i = 0; i < lines.length; i++) {
@@ -2342,6 +2329,21 @@
     text(state.quick ? '快契已成 · 九十秒' : '契文已成 · ' + lv.title,
       cx, y + 32, 11, C.gold, 'center', 'middle', 'bold');
 
+    /* 右上角小开关：白话 ↔ 字源 */
+    var sw = 52, sh = 24;
+    var sx0 = x + w - 12 - sw;
+    rr(sx0, y + 20, sw, sh, sh / 2);
+    ctx.fillStyle = 'rgba(255,250,238,0.55)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(140,106,63,0.32)';
+    ctx.lineWidth = 1;
+    if (ctx.setLineDash) ctx.setLineDash([3, 2]);
+    ctx.stroke();
+    if (ctx.setLineDash) ctx.setLineDash([]);
+    text(state.cardSrc ? '白话' : '字源', sx0 + sw / 2, y + 20 + sh / 2 + 0.5, 10.5,
+      C.inkSoft, 'center', 'middle', 'bold');
+    ui.cardSrc = { x: sx0 - 4, y: y + 14, w: sw + 8, h: sh + 12 };
+
     var gx = cx, gy = y + 102;
     ctx.beginPath();
     ctx.arc(gx, gy, 52, 0, Math.PI * 2);
@@ -2370,21 +2372,18 @@
     text(ch.pinyin, cx + 30, y + 196, 11, C.inkSoft, 'left', 'middle');
     text(ch.meaning, cx, y + 228, 14, C.ink, 'center', 'middle', 'bold');
 
-    var copy = state.mode === 'kid' ? ch.kid : ch.adult;
+    /* 白话与字源互切：默认一句白话，想深看再点右上角 */
+    var copy = state.cardSrc ? ch.adult : ch.kid;
     var lines = wrap(copy, w - 56, 11.5);
     if (lines.length > 3) lines = lines.slice(0, 3);
     drawLines(lines, cx, y + 258, 19, 11.5, 'rgba(58,45,30,0.78)');
 
     var boneY = y + 320;
-    if (state.mode === 'kid') {
-      text(ch.gloss, cx, boneY + 8, 11, C.inkSoft, 'center', 'middle');
+    if (ch.bone) {
+      text('「' + ch.bone + '」', cx, boneY - 8, 12.5, C.red, 'center', 'middle');
+      text(ch.gloss, cx, boneY + 10, 10.5, C.inkSoft, 'center', 'middle');
     } else {
-      if (ch.bone) {
-        text('「' + ch.bone + '」', cx, boneY - 8, 12.5, C.red, 'center', 'middle');
-        text(ch.gloss, cx, boneY + 10, 10.5, C.inkSoft, 'center', 'middle');
-      } else {
-        text(ch.gloss, cx, boneY + 8, 11, C.inkSoft, 'center', 'middle');
-      }
+      text(ch.gloss, cx, boneY + 8, 11, C.inkSoft, 'center', 'middle');
     }
 
     ctx.strokeStyle = 'rgba(150,120,80,0.25)';
@@ -2455,8 +2454,6 @@
     ctx.translate(-(ui.evo.x + ui.evo.w / 2), -(ui.evo.y + ui.evo.h / 2));
     drawButton(ui.evo, '看演变', { ink: true, size: isWx ? (state.quick ? 11 : 10.5) : 12, play: true });
     ctx.restore();
-
-    text(state.mode === 'kid' ? '童蒙本' : '雅士本', x + 24, y + 26, 9, C.inkFaint, 'left', 'middle');
 
     ctx.restore();
   }
@@ -2942,7 +2939,7 @@
       ? '你已识得三十个甲骨字'
       : quickFail
         ? '快契未成，再开一局'
-        : (state.mode === 'kid' ? '别急，卜辞只差一点点' : '卜辞未验，再试一契');
+        : '卜辞未验，再试一契';
     text(sub, cx, y + 144, 11.5, C.inkSoft, 'center', 'middle');
 
     text('已识 ' + progress.learned.length + ' / ' + Data.CHARS.length + ' 字',
@@ -3330,9 +3327,9 @@
     ui.primary = null;
     ui.secondary = null;
     ui.share = null;
-    ui.modeKid = null;
-    ui.modeAdult = null;
     ui.fontPill = null;
+    ui.hint = null;
+    ui.cardSrc = null;
     ui.optA = null;
     ui.optB = null;
     ui.library = null;
@@ -3482,14 +3479,15 @@
     if (inRect(x, y, ui.sound)) { Sfx.toggle(); Sfx.play('tap'); return; }
 
     var onButton = inRect(x, y, ui.primary) || inRect(x, y, ui.secondary) ||
-      inRect(x, y, ui.share) || inRect(x, y, ui.modeKid) || inRect(x, y, ui.modeAdult) ||
+      inRect(x, y, ui.share) ||
       inRect(x, y, ui.optA) || inRect(x, y, ui.optB) || inRect(x, y, ui.restart) ||
       inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster) ||
       inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn) ||
       inRect(x, y, ui.evo) ||
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
       inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit) ||
-      inRect(x, y, ui.fontPill) || inRect(x, y, ui.feedback);
+      inRect(x, y, ui.fontPill) || inRect(x, y, ui.feedback) ||
+      inRect(x, y, ui.hint) || inRect(x, y, ui.cardSrc);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
@@ -3506,8 +3504,6 @@
         Sfx.play('select');
         return;
       }
-      if (inRect(x, y, ui.modeKid)) { setMode('kid'); return; }
-      if (inRect(x, y, ui.modeAdult)) { setMode('adult'); return; }
       if (inRect(x, y, ui.library)) { openLibrary(); return; }
       if (inRect(x, y, ui.pick)) { openLevels(); return; }
       if (inRect(x, y, ui.quick)) { startQuick(); return; }
@@ -3521,6 +3517,7 @@
     }
 
     if (state.screen === 'card') {
+      if (inRect(x, y, ui.cardSrc)) { state.cardSrc = !state.cardSrc; Sfx.play('tap'); return; }
       if (inRect(x, y, ui.evoBtn) || inRect(x, y, ui.evo)) { openEvolution(Data.char(levelConfig().char)); return; }
       if (inRect(x, y, ui.share)) { shareChallenge(); return; }
       if (inRect(x, y, ui.poster)) { buildPoster(); return; }
@@ -3629,6 +3626,8 @@
     }
 
     if (inRect(x, y, ui.exit)) { goHome(); return; }
+
+    if (inRect(x, y, ui.hint)) { requestHint(); return; }
 
     if (inRect(x, y, ui.restart)) {
       if (state.quick) startQuick();
