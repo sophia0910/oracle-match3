@@ -45,7 +45,22 @@
     head: 'bs',
     boat: 'bs',
     bow: 'bs',
-    cart: 'bs'
+    cart: 'bs',
+    tiger: 'bs',
+    deer: 'bs',
+    rabbit: 'bs',
+    turtle: 'bs',
+    shell: 'bs',
+    horn: 'bs',
+    woman: 'bs',
+    child: 'bs',
+    stand: 'bs',
+    gate: 'bs',
+    robe: 'bs',
+    knife: 'bs',
+    daggeraxe: 'bs',
+    tripod: 'bs',
+    jade: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;

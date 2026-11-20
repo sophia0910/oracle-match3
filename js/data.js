@@ -411,6 +411,141 @@
       adult: '甲骨「车」多作俯视或侧视，象双轮、车轴、车辕之形。',
       bone: '',
       gloss: '卜辞「车」多记车马、田猎之事。'
+    },
+    {
+      id: 'tiger', glyph: 'tiger', kai: '虎', pinyin: 'hǔ', volume: '动物',
+      meaning: '老虎',
+      logic: '画一只老虎：张开大嘴，身上有条纹，长尾巴向上卷。',
+      kid: '一只大老虎张着嘴巴，身上一条条花纹。',
+      adult: '甲骨「虎」象虎侧视，巨口利齿、身有斑纹、长尾上卷，特征分明。',
+      bone: '获虎',
+      gloss: '记田猎捕获老虎。'
+    },
+    {
+      id: 'deer', glyph: 'deer', kai: '鹿', pinyin: 'lù', volume: '动物',
+      meaning: '鹿',
+      logic: '画一只鹿：头顶枝状的角，大眼睛，细腿短尾。',
+      kid: '小鹿顶着树枝一样的角，眼睛大大的。',
+      adult: '甲骨「鹿」象鹿侧视，枝角、大目、细足，角形尤为突出。',
+      bone: '逐鹿',
+      gloss: '田猎时追逐鹿群。'
+    },
+    {
+      id: 'rabbit', glyph: 'rabbit', kai: '兔', pinyin: 'tù', volume: '动物',
+      meaning: '兔子',
+      logic: '画一只兔子：竖起长耳，短尾巴，后腿比前腿长。',
+      kid: '小兔子竖起两只长耳朵，尾巴短短的。',
+      adult: '甲骨「兔」象兔侧视，长耳短尾，后足长而前足短。',
+      bone: '',
+      gloss: '「兔」在卜辞中多为田猎所获之兽。'
+    },
+    {
+      id: 'turtle', glyph: 'turtle', kai: '龟', pinyin: 'guī', volume: '动物',
+      meaning: '乌龟',
+      logic: '画一只乌龟：圆圆隆起的背甲，四条短腿，小尾巴。',
+      kid: '小乌龟背着圆圆的壳，四条腿慢慢爬。',
+      adult: '甲骨「龟」象龟之形，圆背四足，或作俯视，背上甲纹或省。',
+      bone: '',
+      gloss: '龟腹甲是占卜的主要材料，「龟」字本身即象其形。'
+    },
+    {
+      id: 'shell', glyph: 'shell', kai: '贝', pinyin: 'bèi', volume: '动物',
+      meaning: '海贝',
+      logic: '画一枚海贝：两扇壳合起，壳面上有一道道齿纹。',
+      kid: '一枚小贝壳，壳上有一道道齿纹。',
+      adult: '甲骨「贝」象海贝之形，壳有齿纹；商周以贝为宝货，故「财」「货」皆从贝。',
+      bone: '',
+      gloss: '贝是商代宝货，后世「财」「货」等字皆从贝。'
+    },
+    {
+      id: 'horn', glyph: 'horn', kai: '角', pinyin: 'jiǎo', volume: '动物',
+      meaning: '兽角',
+      logic: '画一只兽角：根部粗，尖端弯，角上有纹。',
+      kid: '一只弯弯的兽角，粗的一头连着脑袋。',
+      adult: '甲骨「角」象兽角之形，上有纹理，本义为牛角。',
+      bone: '',
+      gloss: '「角」本义为兽角，后引申为角落、量器。'
+    },
+    {
+      id: 'woman', glyph: 'woman', kai: '女', pinyin: 'nǚ', volume: '人体',
+      meaning: '女子',
+      logic: '画一个跪坐的女子：双手交叠，放在身前。',
+      kid: '一个女孩子跪坐着，双手放在身前。',
+      adult: '甲骨「女」象女子跪坐、双手交叠之形；「母」于胸前加两点以别。',
+      bone: '',
+      gloss: '「女」部字多与女性、婚育相关。'
+    },
+    {
+      id: 'child', glyph: 'child', kai: '子', pinyin: 'zǐ', volume: '人体',
+      meaning: '孩子',
+      logic: '画一个婴儿：头大，两臂张开，两腿并拢。',
+      kid: '一个小宝宝张开双手，腿还并在一起。',
+      adult: '甲骨「子」象婴儿之形，头大而臂张，两足并拢或裹于襁褓。',
+      bone: '',
+      gloss: '卜辞「子」多指王子、子嗣。'
+    },
+    {
+      id: 'stand', glyph: 'stand', kai: '立', pinyin: 'lì', volume: '人体',
+      meaning: '站立',
+      logic: '一个人张开手脚站在地面上，脚下一条横线就是地。',
+      kid: '一个人张开双手，稳稳站在地上。',
+      adult: '甲骨「立」从大（正面人形）加一横为地，会人站立之意。',
+      bone: '',
+      gloss: '「立」后引申为设立、位次。'
+    },
+    {
+      id: 'gate', glyph: 'gate', kai: '门', pinyin: 'mén', volume: '器物',
+      meaning: '门户',
+      logic: '画两扇对开的门：左右各一扇，上面是门楣。',
+      kid: '两扇大门并排立着，一推就开。',
+      adult: '甲骨「门」象双扇门形，左右相对，上端象门楣。',
+      bone: '',
+      gloss: '「门」部字多与门户、开闭相关。'
+    },
+    {
+      id: 'robe', glyph: 'robe', kai: '衣', pinyin: 'yī', volume: '器物',
+      meaning: '上衣',
+      logic: '画一件上衣：上面是领口，两边伸出袖子，下面是衣襟。',
+      kid: '一件小衣服，上面有领子，两边有袖子。',
+      adult: '甲骨「衣」象上衣之形，上有领口，下有衣襟，本义为上衣。',
+      bone: '',
+      gloss: '卜辞「衣」多借作祭名。'
+    },
+    {
+      id: 'knife', glyph: 'knife', kai: '刀', pinyin: 'dāo', volume: '器物',
+      meaning: '刀',
+      logic: '画一把刀：刀身弯弯，刀柄短短。',
+      kid: '一把小刀，刀刃弯弯的。',
+      adult: '甲骨「刀」象刀形，刃部外凸、柄短；「刃」于刃口加点以指其处。',
+      bone: '',
+      gloss: '「刀」部字多与刀具、切割相关。'
+    },
+    {
+      id: 'daggeraxe', glyph: 'daggeraxe', kai: '戈', pinyin: 'gē', volume: '器物',
+      meaning: '戈',
+      logic: '画一柄戈：横着的刃，长长的柄，下面还有尖脚。',
+      kid: '一柄长长的戈，横着锋利的刃。',
+      adult: '甲骨「戈」象戈之全形：横刃、直内、长柲，为商代常见兵器。',
+      bone: '',
+      gloss: '卜辞「戈」多与征伐、兵器相关。'
+    },
+    {
+      id: 'tripod', glyph: 'tripod', kai: '鼎', pinyin: 'dǐng', volume: '器物',
+      meaning: '鼎',
+      logic: '画一只鼎：上面两只耳，中间圆腹，下面三条腿。',
+      kid: '一只大鼎，有两只耳朵和三条腿。',
+      adult: '甲骨「鼎」象鼎之形：双耳、圆腹、三足，或于腹上画出纹饰。',
+      bone: '',
+      gloss: '青铜鼎是商周礼器，后世「定鼎」即由此而来。'
+    },
+    {
+      id: 'jade', glyph: 'jade', kai: '玉', pinyin: 'yù', volume: '器物',
+      meaning: '美玉',
+      logic: '画一串玉：一根绳上穿着几块玉片。',
+      kid: '一根线串起几片亮亮的玉。',
+      adult: '甲骨「玉」象绳串玉片之形；后世加点，以别于「王」。',
+      bone: '',
+      gloss: '卜辞「玉」多指玉器，与祭祀、贡纳相关。'
     }
   ];
 
@@ -519,6 +654,41 @@
       req: [{ id: 'zhou', n: 12 }],
       pool: ['zhou', 'zhou', 'gong', 'che', 'tian', 'ren', 'shui'],
       spirit: ['ri', 'yue', 'shui']
+    },
+    {
+      char: 'tiger', title: '第十六契', moves: 30,
+      learn: ['tiger', 'deer', 'rabbit'],
+      req: [{ id: 'tiger', n: 12 }],
+      pool: ['tiger', 'tiger', 'deer', 'rabbit', 'ma', 'quangou', 'shizhu'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'turtle', title: '第十七契', moves: 30,
+      learn: ['turtle', 'shell', 'horn'],
+      req: [{ id: 'turtle', n: 12 }],
+      pool: ['turtle', 'turtle', 'shell', 'horn', 'yufish', 'niao', 'ma'],
+      spirit: ['ri', 'shui', 'yu']
+    },
+    {
+      char: 'woman', title: '第十八契', moves: 30,
+      learn: ['woman', 'child', 'stand'],
+      req: [{ id: 'woman', n: 12 }],
+      pool: ['woman', 'woman', 'child', 'stand', 'ren', 'er', 'shou'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'gate', title: '第十九契', moves: 32,
+      learn: ['gate', 'robe', 'knife'],
+      req: [{ id: 'gate', n: 13 }],
+      pool: ['gate', 'gate', 'robe', 'knife', 'zhou', 'gong', 'che'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'daggeraxe', title: '第二十契', moves: 32,
+      learn: ['daggeraxe', 'tripod', 'jade'],
+      req: [{ id: 'daggeraxe', n: 13 }],
+      pool: ['daggeraxe', 'daggeraxe', 'tripod', 'jade', 'gate', 'knife', 'che'],
+      spirit: ['ri', 'yue', 'shan']
     }
   ];
 

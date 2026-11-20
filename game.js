@@ -1,4 +1,4 @@
-/* 甲骨消消乐 · 微信小游戏主程序（十五契垂直切片） */
+/* 甲骨消消乐 · 微信小游戏主程序（二十契垂直切片） */
 (function () {
   'use strict';
 
@@ -2095,10 +2095,10 @@
     ui.prev = { x: x + 4, y: dotsY - 22, w: 44, h: 44 };
     ui.next = { x: x + 72, y: dotsY - 22, w: 44, h: 44 };
 
-    var dotR = LEVEL_COUNT > 10 ? 3.6 : 4.5;
-    var dotGap = Math.min(LEVEL_COUNT > 10 ? 10 : 14,
-      (w - 40 - 48 - dotR * 2) / Math.max(1, LEVEL_COUNT - 1));
+    var dotR = LEVEL_COUNT > 15 ? 3.2 : (LEVEL_COUNT > 10 ? 3.6 : 4.5);
     var dotRight = x + w - 20 - dotR;
+    var dotGap = Math.min(LEVEL_COUNT > 10 ? 10 : 14,
+      (dotRight - (x + 108) - dotR) / Math.max(1, LEVEL_COUNT - 1));
     for (var k = 0; k < LEVEL_COUNT; k++) {
       var kch = Data.char(Data.LEVELS[k].char);
       var kdone = progress.learned.indexOf(kch.id) >= 0;
