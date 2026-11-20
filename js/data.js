@@ -546,6 +546,141 @@
       adult: '甲骨「玉」象绳串玉片之形；后世加点，以别于「王」。',
       bone: '',
       gloss: '卜辞「玉」多指玉器，与祭祀、贡纳相关。'
+    },
+    {
+      id: 'xi', glyph: 'xi', kai: '夕', pinyin: 'xī', volume: '自然',
+      meaning: '傍晚',
+      logic: '画一弯细细的月牙，表示太阳落山后的傍晚。',
+      kid: '天黑了，天上挂着一弯细细的月牙。',
+      adult: '甲骨「夕」与「月」同形，皆作半月之形；卜辞中「夕」指夜晚，与「日」相对。',
+      bone: '今夕',
+      gloss: '卜辞常见「今夕」，问今夜吉凶、有雨无雨。'
+    },
+    {
+      id: 'jing', glyph: 'jing', kai: '晶', pinyin: 'jīng', volume: '自然',
+      meaning: '光亮',
+      logic: '三个太阳叠在一起，表示光亮四射。',
+      kid: '三个小太阳凑在一起，亮晶晶的。',
+      adult: '甲骨「晶」以三个日（或星形）相叠，会光亮之意，本义为明亮。',
+      bone: '',
+      gloss: '「晶」本义为光亮，后多用于「水晶」「结晶」。'
+    },
+    {
+      id: 'qi', glyph: 'qi', kai: '气', pinyin: 'qì', volume: '自然',
+      meaning: '云气',
+      logic: '画三道横线，像天上飘浮的云气。',
+      kid: '天上飘着三缕云气，轻轻往上走。',
+      adult: '甲骨「气」作三横，中画稍短，象云气层叠；本义为云气。',
+      bone: '',
+      gloss: '「气」本义为云气，后引申为气息、天气。'
+    },
+    {
+      id: 'xiang', glyph: 'xiang', kai: '象', pinyin: 'xiàng', volume: '动物',
+      meaning: '大象',
+      logic: '画一头大象：长鼻子、大耳朵、四条粗腿。',
+      kid: '一头大象，长鼻子卷起来，耳朵像扇子。',
+      adult: '甲骨「象」象大象侧视，长鼻上卷、巨耳、四足，特征分明。',
+      bone: '',
+      gloss: '「象」本义为大象，后借以表示形象、想象。'
+    },
+    {
+      id: 'yan', glyph: 'yan', kai: '燕', pinyin: 'yàn', volume: '动物',
+      meaning: '燕子',
+      logic: '画一只燕子：尖嘴、张开的翅膀、分叉的尾巴。',
+      kid: '一只小燕子，张开翅膀，尾巴像剪刀。',
+      adult: '甲骨「燕」象燕之形，尖喙、双翼、叉尾，本义为燕子。',
+      bone: '',
+      gloss: '「燕」本义为燕子，后世又借为宴饮之「宴」。'
+    },
+    {
+      id: 'chong', glyph: 'chong', kai: '虫', pinyin: 'chóng', volume: '动物',
+      meaning: '蛇',
+      logic: '画一条蛇：三角形的头，弯弯的身子。',
+      kid: '一条小蛇，脑袋尖尖，身子弯弯。',
+      adult: '甲骨「虫」象蛇之形，头作三角、身曲尾细，本义即蛇。',
+      bone: '',
+      gloss: '「虫」本义为蛇，后世才泛指虫类。'
+    },
+    {
+      id: 'chi', glyph: 'chi', kai: '齿', pinyin: 'chǐ', volume: '人体',
+      meaning: '牙齿',
+      logic: '画一张嘴，里面露出几颗牙齿。',
+      kid: '张开嘴巴，里面一排小牙齿。',
+      adult: '甲骨「齿」于口中画出牙齿之形，本义为牙齿。',
+      bone: '疾齿',
+      gloss: '卜问牙疾之事。'
+    },
+    {
+      id: 'mei', glyph: 'mei', kai: '眉', pinyin: 'méi', volume: '人体',
+      meaning: '眉毛',
+      logic: '画一只眼睛，眼睛上面加几道毛。',
+      kid: '眼睛上面长着几根弯弯的眉毛。',
+      adult: '甲骨「眉」于目上加毛，会眉毛之意。',
+      bone: '',
+      gloss: '「眉」本义为眉毛，后引申为眉目、眉寿。'
+    },
+    {
+      id: 'zi', glyph: 'zi', kai: '自', pinyin: 'zì', volume: '人体',
+      meaning: '鼻子',
+      logic: '画一个鼻子：中间两道鼻梁，下面两个鼻孔。',
+      kid: '一个鼻子，下面有两个小鼻孔。',
+      adult: '甲骨「自」象鼻之形，本义为鼻；后借为「自己」之自。',
+      bone: '',
+      gloss: '「自」本为鼻的象形，卜辞多借为「从、自」之自。'
+    },
+    {
+      id: 'zun', glyph: 'zun', kai: '尊', pinyin: 'zūn', volume: '器物',
+      meaning: '酒尊',
+      logic: '画一只酒尊：口沿外撇，圆腹，下有圈足。',
+      kid: '一只高高的酒杯，肚子里能装酒。',
+      adult: '甲骨「尊」象双手捧酒器之形，本义为酒器。',
+      bone: '',
+      gloss: '「尊」本义为酒器，后引申为尊敬、尊长。'
+    },
+    {
+      id: 'jue', glyph: 'jue', kai: '爵', pinyin: 'jué', volume: '器物',
+      meaning: '酒爵',
+      logic: '画一只爵：一边是倒酒的流，一边是尖尾，下面三条腿。',
+      kid: '一只三只脚的小酒杯，前面有个倒酒的口。',
+      adult: '甲骨「爵」象爵形：有流、有尾、有鋬，下承三足。',
+      bone: '',
+      gloss: '「爵」本为酒器，后世成为爵位之称。'
+    },
+    {
+      id: 'hu', glyph: 'hu', kai: '壶', pinyin: 'hú', volume: '器物',
+      meaning: '壶',
+      logic: '画一只壶：上面有盖，肚子圆圆，两边有耳。',
+      kid: '一只圆肚子的小壶，两边有提手。',
+      adult: '甲骨「壶」象壶形：有盖、圆腹、圈足，或加双耳。',
+      bone: '',
+      gloss: '「壶」本为盛酒浆之器，形制沿用至今。'
+    },
+    {
+      id: 'wang', glyph: 'wang', kai: '网', pinyin: 'wǎng', volume: '器物',
+      meaning: '渔网',
+      logic: '画一张网：两根木杆撑起交叉的网线。',
+      kid: '一张渔网，格子里能兜住鱼。',
+      adult: '甲骨「网」象张网之形，网线交叉，两端有柄。',
+      bone: '',
+      gloss: '「网」本象渔网，后世加糸作「網」，今又简化为「网」。'
+    },
+    {
+      id: 'ce', glyph: 'ce', kai: '册', pinyin: 'cè', volume: '器物',
+      meaning: '书册',
+      logic: '画几片竹简，用绳子串在一起。',
+      kid: '几片竹片用绳子串起来，就是一本书。',
+      adult: '甲骨「册」象竹简编连之形，本义为书册。',
+      bone: '',
+      gloss: '「册」象简册编连，是书册之「册」的本字。'
+    },
+    {
+      id: 'broom', glyph: 'broom', kai: '帚', pinyin: 'zhǒu', volume: '器物',
+      meaning: '扫帚',
+      logic: '画一把扫帚：上面是柄，下面一丛草。',
+      kid: '一把小扫帚，能扫地上的土。',
+      adult: '甲骨「帚」象手执扫帚之形，本义为扫帚。',
+      bone: '帚好',
+      gloss: '卜辞多以「帚」为「妇」，「帚好」即妇好。'
     }
   ];
 
@@ -689,6 +824,41 @@
       req: [{ id: 'daggeraxe', n: 13 }],
       pool: ['daggeraxe', 'daggeraxe', 'tripod', 'jade', 'gate', 'knife', 'che'],
       spirit: ['ri', 'yue', 'shan']
+    },
+    {
+      char: 'xi', title: '第二十一契', moves: 30,
+      learn: ['xi', 'jing', 'qi'],
+      req: [{ id: 'xi', n: 12 }],
+      pool: ['xi', 'xi', 'jing', 'qi', 'xing', 'feng', 'lei'],
+      spirit: ['ri', 'yue', 'xing']
+    },
+    {
+      char: 'xiang', title: '第二十二契', moves: 30,
+      learn: ['xiang', 'yan', 'chong'],
+      req: [{ id: 'xiang', n: 12 }],
+      pool: ['xiang', 'xiang', 'yan', 'chong', 'tiger', 'deer', 'ma'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'chi', title: '第二十三契', moves: 32,
+      learn: ['chi', 'mei', 'zi'],
+      req: [{ id: 'chi', n: 13 }],
+      pool: ['chi', 'chi', 'mei', 'zi', 'er', 'mueye', 'kou'],
+      spirit: ['ri', 'ren', 'mueye']
+    },
+    {
+      char: 'zun', title: '第二十四契', moves: 32,
+      learn: ['zun', 'jue', 'hu'],
+      req: [{ id: 'zun', n: 13 }],
+      pool: ['zun', 'zun', 'jue', 'hu', 'tripod', 'jade', 'daggeraxe'],
+      spirit: ['ri', 'yue', 'shan']
+    },
+    {
+      char: 'wang', title: '第二十五契', moves: 32,
+      learn: ['wang', 'ce', 'broom'],
+      req: [{ id: 'wang', n: 13 }],
+      pool: ['wang', 'wang', 'ce', 'broom', 'gate', 'knife', 'zhu'],
+      spirit: ['ri', 'yue', 'tu']
     }
   ];
 
@@ -780,6 +950,15 @@
         '有的字越写越简，有的字加上了形旁或声旁。',
         '但「日」「月」「山」「水」这些字，三千年没有换过骨相。',
         '你写下的每一笔，都是这条长河的下一段。'
+      ]
+    },
+    {
+      id: 'n11', title: '从骨到纸', need: 75,
+      body: [
+        '商人在骨上刻字，周人把字铸在铜器上。',
+        '再往后是竹简、帛书、纸张，字才走进寻常人家。',
+        '载体换了又换，笔意却一路传下来。',
+        '识得七十五字，你已经能读懂一小片商代的天空。'
       ]
     }
   ];

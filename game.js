@@ -1,4 +1,4 @@
-/* 甲骨消消乐 · 微信小游戏主程序（二十契垂直切片） */
+/* 甲骨消消乐 · 微信小游戏主程序（二十五契垂直切片） */
 (function () {
   'use strict';
 
@@ -227,6 +227,8 @@
     startSel: Math.min(progress.unlocked - 1, LEVEL_COUNT - 1),
     libraryTab: 'chars',
     versePage: 0,
+    charPage: 0,
+    notePage: 0,
     librarySel: null,
     noteSel: null,
     posterCanvas: null,
@@ -589,6 +591,8 @@
     state.screen = 'library';
     state.libraryTab = 'chars';
     state.versePage = 0;
+    state.charPage = 0;
+    state.notePage = 0;
     state.librarySel = null;
     state.noteSel = null;
     state.toast = null;
@@ -3141,13 +3145,13 @@
       active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
   }
 
-  function drawLibraryGrid(w, x, y, cellH) {
+  function drawLibraryGrid(w, x, y, cellH, from, count) {
     var cols = 6;
     var cw = (w - 40) / cols;
     var gx = x + 20;
     var gy = y + 92;
-    for (var i = 0; i < Data.CHARS.length; i++) {
-      var ch = Data.CHARS[i];
+    for (var i = 0; i < count; i++) {
+      var ch = Data.CHARS[from + i];
       var col = i % cols;
       var row = Math.floor(i / cols);
       var cellX = gx + col * cw;
@@ -3272,20 +3276,31 @@
     ui.noteCells = [];
   }
 
-  function drawNotes(w, x, y) {
-    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  function noteGridLayout() {
     var cols = 2;
+    var rows = Math.max(3, Math.min(5, Math.floor((viewH - 200) / 100)));
+    return { cols: cols, rows: rows, perPage: cols * rows };
+  }
+
+  function drawNotes(w, x, y) {
+    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+    var grid = noteGridLayout();
+    var cols = grid.cols;
     var gap = 8;
     var cardW = (w - 40 - gap) / cols;
     var gx = x + 20;
     var gy = y + 92;
-    var rows = Math.ceil(Data.NOTES.length / cols);
-    var avail = viewH - y - 24 - (gy - y);
-    var cardH = Math.min(132, Math.max(78, avail / rows - gap));
+    var avail = viewH - 92 - gy;
+    var cardH = Math.min(132, Math.max(72, avail / grid.rows - gap));
     var compact = cardH < 112;
+    var pages = Math.max(1, Math.ceil(Data.NOTES.length / grid.perPage));
+    if (state.notePage >= pages) state.notePage = pages - 1;
+    if (state.notePage < 0) state.notePage = 0;
+    var from = state.notePage * grid.perPage;
+    var list = Data.NOTES.slice(from, from + grid.perPage);
 
-    for (var i = 0; i < Data.NOTES.length; i++) {
-      var note = Data.NOTES[i];
+    for (var i = 0; i < list.length; i++) {
+      var note = list[i];
       var col = i % cols;
       var row = Math.floor(i / cols);
       var rx = gx + col * (cardW + gap);
@@ -3299,7 +3314,7 @@
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      text('手记 ' + cn[i], rx + 12, ry + 20, 10,
+      text('手记 ' + (cn[from + i] || (from + i + 1)), rx + 12, ry + 20, 10,
         open ? C.gold : 'rgba(58,45,30,0.28)', 'left', 'middle', 'bold');
       text(note.title, rx + 12, ry + (compact ? 38 : 44), 13.5,
         open ? C.ink : 'rgba(58,45,30,0.42)', 'left', 'middle', 'bold');
@@ -3324,8 +3339,18 @@
       });
     }
 
-    var endY = gy + rows * (cardH + gap) - gap;
-    return Math.min(y + (viewH - y - 12) - 26, endY + 28);
+    var gridBottom = gy + grid.rows * (cardH + gap) - gap;
+    if (pages > 1) {
+      var pgY = gridBottom + 6;
+      ui.notePrev = { x: x + w / 2 - 78, y: pgY, w: 34, h: 26 };
+      ui.noteNext = { x: x + w / 2 + 44, y: pgY, w: 34, h: 26 };
+      drawButton(ui.notePrev, '‹', { ghost: true, size: 14, disabled: state.notePage === 0 });
+      drawButton(ui.noteNext, '›', { ghost: true, size: 14, disabled: state.notePage >= pages - 1 });
+      text('第 ' + (state.notePage + 1) + ' / ' + pages + ' 页',
+        x + w / 2, pgY + 13, 10, C.inkSoft, 'center', 'middle');
+      return pgY + 36;
+    }
+    return gridBottom + 28;
   }
 
   function drawLibraryDetail(ch) {
@@ -3407,6 +3432,12 @@
     ctx.restore();
   }
 
+  function charGridLayout() {
+    var cols = 6;
+    var rows = Math.max(4, Math.min(12, Math.floor((viewH - 200) / 56)));
+    return { cols: cols, rows: rows, perPage: cols * rows };
+  }
+
   function drawLibrary() {
     var learnedCount = progress.learned.length;
     var list = readings();
@@ -3420,9 +3451,12 @@
 
     var w = Math.min(layout.contentW, 400);
     var x = (viewW - w) / 2;
-    var rows = Math.ceil(Data.CHARS.length / 6);
-    var cellH = Math.min(66, Math.max(40, (viewH - 168) / rows));
-    var charsH = 92 + rows * cellH + 44;
+    var grid = charGridLayout();
+    var charPages = Math.max(1, Math.ceil(Data.CHARS.length / grid.perPage));
+    if (state.charPage >= charPages) state.charPage = charPages - 1;
+    if (state.charPage < 0) state.charPage = 0;
+    var cellH = Math.min(66, Math.max(40, (viewH - 190) / grid.rows));
+    var charsH = 92 + grid.rows * cellH + 64;
     var versesH = 520;
     var y = state.libraryTab === 'chars'
       ? Math.max(safeTop + 10, (viewH - charsH) / 2)
@@ -3455,6 +3489,10 @@
     ui.noteCells = [];
     ui.versePrev = null;
     ui.verseNext = null;
+    ui.charPrev = null;
+    ui.charNext = null;
+    ui.notePrev = null;
+    ui.noteNext = null;
 
     if (state.libraryTab === 'verses') {
       var perPage = 6;
@@ -3478,7 +3516,18 @@
       text('识得愈多，史官翻得愈多 · 已启 ' + notesOn + ' / ' + Data.NOTES.length,
         x + w / 2, footY, 10, C.inkFaint, 'center', 'middle');
     } else {
-      drawLibraryGrid(w, x, y, cellH);
+      var from = state.charPage * grid.perPage;
+      drawLibraryGrid(w, x, y, cellH, from,
+        Math.min(grid.perPage, Data.CHARS.length - from));
+      if (charPages > 1) {
+        var pgY = y + 92 + grid.rows * cellH + 8;
+        ui.charPrev = { x: x + w / 2 - 78, y: pgY, w: 34, h: 26 };
+        ui.charNext = { x: x + w / 2 + 44, y: pgY, w: 34, h: 26 };
+        drawButton(ui.charPrev, '‹', { ghost: true, size: 14, disabled: state.charPage === 0 });
+        drawButton(ui.charNext, '›', { ghost: true, size: 14, disabled: state.charPage >= charPages - 1 });
+        text('第 ' + (state.charPage + 1) + ' / ' + charPages + ' 页',
+          x + w / 2, pgY + 13, 10, C.inkSoft, 'center', 'middle');
+      }
       text('完成一契，其字即收入字库 · 已识 ' + learnedCount + ' / ' + Data.CHARS.length,
         x + w / 2, y + h - 24, 10, C.inkFaint, 'center', 'middle');
     }
@@ -3808,6 +3857,28 @@
         }
         if (ui.verseNext && inRect(x, y, ui.verseNext) && state.versePage < pages - 1) {
           state.versePage++;
+          return;
+        }
+      }
+      if (state.libraryTab === 'chars') {
+        var cp = Math.max(1, Math.ceil(Data.CHARS.length / charGridLayout().perPage));
+        if (ui.charPrev && inRect(x, y, ui.charPrev) && state.charPage > 0) {
+          state.charPage--;
+          return;
+        }
+        if (ui.charNext && inRect(x, y, ui.charNext) && state.charPage < cp - 1) {
+          state.charPage++;
+          return;
+        }
+      }
+      if (state.libraryTab === 'notes') {
+        var np = Math.max(1, Math.ceil(Data.NOTES.length / noteGridLayout().perPage));
+        if (ui.notePrev && inRect(x, y, ui.notePrev) && state.notePage > 0) {
+          state.notePage--;
+          return;
+        }
+        if (ui.noteNext && inRect(x, y, ui.noteNext) && state.notePage < np - 1) {
+          state.notePage++;
           return;
         }
       }

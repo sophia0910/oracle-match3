@@ -60,7 +60,22 @@
     knife: 'bs',
     daggeraxe: 'bs',
     tripod: 'bs',
-    jade: 'bs'
+    jade: 'bs',
+    xi: 'bs',
+    jing: 's',
+    qi: 'bs',
+    xiang: 'bs',
+    yan: 's',
+    chong: 'bs',
+    chi: 'bs',
+    mei: 'bs',
+    zi: 'bs',
+    zun: 'bs',
+    jue: 'bs',
+    hu: 'bs',
+    wang: 'bs',
+    ce: 'bs',
+    broom: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;
