@@ -281,62 +281,62 @@
 
   var LEVELS = [
     {
-      char: 'ri', title: '第一契', moves: 24,
-      req: [{ id: 'ri', n: 12 }],
+      char: 'ri', title: '第一契', moves: 20,
+      req: [{ id: 'ri', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'tian'],
       spirit: []
     },
     {
-      char: 'yue', title: '第二契', moves: 24,
-      req: [{ id: 'yue', n: 12 }],
+      char: 'yue', title: '第二契', moves: 20,
+      req: [{ id: 'yue', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'huo'],
       spirit: ['ri']
     },
     {
-      char: 'shan', title: '第三契', moves: 26,
-      req: [{ id: 'shan', n: 12 }],
+      char: 'shan', title: '第三契', moves: 22,
+      req: [{ id: 'shan', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'huo', 'shi'],
       spirit: ['ri', 'yue']
     },
     {
-      char: 'shui', title: '第四契', moves: 30,
+      char: 'shui', title: '第四契', moves: 24,
       req: [{ id: 'shui', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'huo', 'chuan', 'shi', 'mu'],
       spirit: ['ri', 'yue', 'shan']
     },
     {
-      char: 'mu', title: '第五契', moves: 26,
-      req: [{ id: 'mu', n: 12 }],
+      char: 'mu', title: '第五契', moves: 22,
+      req: [{ id: 'mu', n: 11 }],
       pool: ['ri', 'shan', 'shui', 'mu', 'huo', 'tian', 'ren'],
       spirit: ['ri', 'yue', 'shui']
     },
     {
-      char: 'huo', title: '第六契', moves: 26,
-      req: [{ id: 'huo', n: 12 }],
+      char: 'huo', title: '第六契', moves: 22,
+      req: [{ id: 'huo', n: 11 }],
       pool: ['shui', 'mu', 'huo', 'tu', 'shi', 'ren', 'tian'],
       spirit: ['ri', 'shan', 'mu']
     },
     {
-      char: 'lin', title: '第七契', moves: 30,
-      req: [{ id: 'mu', n: 30 }],
+      char: 'lin', title: '第七契', moves: 24,
+      req: [{ id: 'mu', n: 20 }],
       pool: ['mu', 'mu', 'shui', 'huo', 'tian', 'ren', 'yu'],
       spirit: ['ri', 'shui', 'mu']
     },
     {
-      char: 'ming', title: '第八契', moves: 30,
-      req: [{ id: 'ri', n: 26 }, { id: 'yue', n: 26 }],
+      char: 'ming', title: '第八契', moves: 26,
+      req: [{ id: 'ri', n: 15 }, { id: 'yue', n: 15 }],
       pool: ['ri', 'yue', 'ri', 'yue', 'shui', 'mu', 'yun', 'yu'],
       spirit: ['ri', 'yue', 'mu']
     },
     {
-      char: 'xiu', title: '第九契', moves: 30,
-      req: [{ id: 'ren', n: 26 }, { id: 'mu', n: 26 }],
+      char: 'xiu', title: '第九契', moves: 26,
+      req: [{ id: 'ren', n: 15 }, { id: 'mu', n: 15 }],
       pool: ['ren', 'mu', 'ren', 'mu', 'shui', 'tian', 'niao', 'yufish'],
       spirit: ['ri', 'mu', 'ren']
     },
     {
-      char: 'sen', title: '第十契', moves: 36,
-      req: [{ id: 'mu', n: 40 }],
+      char: 'sen', title: '第十契', moves: 28,
+      req: [{ id: 'mu', n: 24 }],
       pool: ['mu', 'mu', 'mu', 'shui', 'tu', 'huo', 'tian', 'ren', 'zhu'],
       spirit: ['ri', 'yue', 'mu', 'lin']
     }

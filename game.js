@@ -135,10 +135,11 @@
     } catch (e) { /* 忽略存储异常 */ }
   }
 
-  var progress = { mode: 'kid', unlocked: 1, learned: [] };
+  var progress = { mode: 'kid', unlocked: 1, learned: [], bigText: false };
   var stored = loadProgress();
   if (stored) {
     if (stored.mode === 'kid' || stored.mode === 'adult') progress.mode = stored.mode;
+    if (stored.bigText === true) progress.bigText = true;
     if (typeof stored.unlocked === 'number') {
       progress.unlocked = Math.max(1, Math.min(LEVEL_COUNT, Math.floor(stored.unlocked)));
     }
@@ -268,6 +269,7 @@
     share: null,
     modeKid: null,
     modeAdult: null,
+    fontPill: null,
     optA: null,
     optB: null,
     library: null,
@@ -1147,8 +1149,10 @@
     ctx.closePath();
   }
 
+  var FONT_SCALE = progress.bigText ? 1.18 : 1;
+
   function setFont(size, weight) {
-    ctx.font = (weight ? weight + ' ' : '') + size +
+    ctx.font = (weight ? weight + ' ' : '') + (size * FONT_SCALE) +
       'px "Noto Serif SC","Source Han Serif SC","Songti SC","STSong","Noto Serif CJK SC","SimSun",serif';
   }
 
@@ -1161,6 +1165,16 @@
   }
 
   var NO_LINE_START = '。，、；：！？）】」』”’…·';
+
+  function fitText(str, size, maxW, weight) {
+    setFont(size, weight);
+    if (ctx.measureText(str).width <= maxW) return str;
+    var out = str;
+    while (out.length > 1 && ctx.measureText(out + '…').width > maxW) {
+      out = out.slice(0, out.length - 1);
+    }
+    return out + '…';
+  }
 
   function wrap(str, maxW, size) {
     setFont(size);
@@ -1733,15 +1747,15 @@
     if (opts.play) {
       setFont(fs, 'bold');
       var tw = ctx.measureText(label).width;
-      var iconW = fs * 0.6;
+      var iconW = fs * FONT_SCALE * 0.6;
       var gapI = 5;
       var total = iconW + gapI + tw;
       var left = x + (w - total) / 2;
       var cy = y + h / 2 + 1;
       ctx.beginPath();
-      ctx.moveTo(left + 1, cy - fs * 0.35);
+      ctx.moveTo(left + 1, cy - iconW * 0.58);
       ctx.lineTo(left + 1 + iconW * 0.82, cy);
-      ctx.lineTo(left + 1, cy + fs * 0.35);
+      ctx.lineTo(left + 1, cy + iconW * 0.58);
       ctx.closePath();
       ctx.fillStyle = color;
       ctx.fill();
@@ -1789,7 +1803,8 @@
 
     var dmeta = EVO_META[demo.stages[demo.i]];
     text(dmeta.name, px + 82, py + 17, 12.5, C.ink, 'left', 'middle', 'bold');
-    text(dmeta.era + ' · ' + dmeta.note, px + 82, py + 30, 8.5, C.inkSoft, 'left', 'middle');
+    text(fitText(dmeta.era + ' · ' + dmeta.note, 8.5, pw - 132), px + 82, py + 30, 8.5,
+      C.inkSoft, 'left', 'middle');
 
     var ALL_STAGE = ['oracle', 'bronze', 'seal', 'kai'];
     var curAll = ALL_STAGE.indexOf(demo.stages[demo.i]);
@@ -1811,16 +1826,18 @@
     text(demoCh.kai, px + pw - 34, py + 20, 20, C.gold, 'center', 'middle', 'bold');
     text('点开细看', px + pw - 34, py + 38, 7.5, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
-    var pillW = 96, pillH = 34, gap = 12;
-    var totalW = pillW * 2 + gap;
+    var pillW = 86, pillH = 34, gap = 10, fontW = 72;
+    var totalW = pillW * 2 + fontW + gap * 2;
     var px0 = cx - totalW / 2;
     var py0 = y + 170;
 
     ui.modeKid = { x: px0, y: py0, w: pillW, h: pillH };
     ui.modeAdult = { x: px0 + pillW + gap, y: py0, w: pillW, h: pillH };
+    ui.fontPill = { x: px0 + (pillW + gap) * 2, y: py0, w: fontW, h: pillH };
 
     drawModePill(ui.modeKid, '童蒙', state.mode === 'kid');
     drawModePill(ui.modeAdult, '雅士', state.mode === 'adult');
+    drawModePill(ui.fontPill, '大字', progress.bigText, 12.5);
 
     var desc = wrap(MODE_DESC[state.mode], w - 64, 11);
     drawLines(desc, cx, y + 226, 18, 11, 'rgba(58,45,30,0.66)');
@@ -1834,10 +1851,12 @@
         ? '好友在「' + clv.title + ' · ' + cch.kai + '」用 ' + challenge.step + ' 步成文'
         : '好友邀你共契「' + clv.title + ' · ' + cch.kai + '」';
       text(invite, cx, y + 288, 11, C.gold, 'center', 'middle', 'bold');
-      text('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' + progress.unlocked + ' / ' + LEVEL_COUNT + ' 契',
+      text(fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
+        progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 10, w - 40),
         cx, y + 308, 10, 'rgba(90,74,52,0.5)', 'center', 'middle');
     } else {
-      text('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' + progress.unlocked + ' / ' + LEVEL_COUNT + ' 契',
+      text(fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
+        progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40),
         cx, y + 292, 11, C.gold, 'center', 'middle', 'bold');
     }
 
@@ -1859,20 +1878,20 @@
 
     text('字库随时可翻 · 不必先通关', cx, y + 432, 10,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text('每契约五分钟 · 共十契三十字', cx, y + 452, 9.5,
+    text('每契约两三分钟 · 共十契三十字', cx, y + 452, 9.5,
       'rgba(90,74,52,0.4)', 'center', 'middle');
     text('字形源自汉典 · CC0', cx, y + 470, 9,
       'rgba(90,74,52,0.34)', 'center', 'middle');
   }
 
-  function drawModePill(rect, label, active) {
+  function drawModePill(rect, label, active, fs) {
     rr(rect.x, rect.y, rect.w, rect.h, rect.h / 2);
     ctx.fillStyle = active ? C.red : 'rgba(255,250,238,0.72)';
     ctx.fill();
     ctx.strokeStyle = active ? 'rgba(150,50,35,0.5)' : 'rgba(140,106,63,0.35)';
     ctx.lineWidth = 1;
     ctx.stroke();
-    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, 14,
+    text(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5, fs || 14,
       active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
   }
 
@@ -3318,13 +3337,21 @@
       inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn) ||
       inRect(x, y, ui.evo) ||
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
-      inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit);
+      inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit) ||
+      inRect(x, y, ui.fontPill);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
       if (inRect(x, y, ui.startEvo)) {
         var si = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
         openEvolution(Data.char(Data.LEVELS[si].char));
+        return;
+      }
+      if (inRect(x, y, ui.fontPill)) {
+        progress.bigText = !progress.bigText;
+        FONT_SCALE = progress.bigText ? 1.18 : 1;
+        saveProgress();
+        Sfx.play('select');
         return;
       }
       if (inRect(x, y, ui.modeKid)) { setMode('kid'); return; }
