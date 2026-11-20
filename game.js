@@ -271,6 +271,7 @@
     optB: null,
     library: null,
     pick: null,
+    startEvo: null,
     levelCells: null,
     levelsClose: null,
     quick: null,
@@ -1752,14 +1753,50 @@
     text('甲骨消消乐', cx, y + 68, 26, C.ink, 'center', 'middle', 'bold');
     text('契于龟甲 · 消而成文', cx, y + 94, 11.5, C.inkSoft, 'center', 'middle');
 
-    var sample = ['ri', 'yue', 'shan', 'shui', 'mu', 'huo', 'ren', 'da'];
-    var step = 34;
-    var startX = cx - step * (sample.length - 1) / 2;
-    for (var i = 0; i < sample.length; i++) {
-      var ch = Data.char(sample[i]);
-      Glyphs.drawById(ctx, ch.glyph, startX + step * i, y + 128, 22, 1.8, C.ink, true);
-      text(ch.kai, startX + step * i, y + 147, 9.5, C.inkFaint, 'center', 'middle');
+    var demoIdx = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
+    var demoCh = Data.char(Data.LEVELS[demoIdx].char);
+
+    /* 首屏字变：一进首页就能看见这个字从甲骨走到楷书 */
+    var px = x + 22, pw = w - 44, py = y + 112, ph = 50;
+    rr(px, py, pw, ph, 14);
+    ctx.fillStyle = 'rgba(255,250,238,0.62)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(180,145,78,0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ui.startEvo = { x: px, y: py, w: pw, h: ph };
+    var demo = drawStartEvo(demoCh, px + 38, py + 25, 34);
+
+    ctx.beginPath();
+    ctx.moveTo(px + 70, py + 12);
+    ctx.lineTo(px + 70, py + 38);
+    ctx.strokeStyle = 'rgba(180,145,78,0.28)';
+    ctx.stroke();
+
+    var dmeta = EVO_META[demo.stages[demo.i]];
+    text(dmeta.name, px + 82, py + 17, 12.5, C.ink, 'left', 'middle', 'bold');
+    text(dmeta.era + ' · ' + dmeta.note, px + 82, py + 30, 8.5, C.inkSoft, 'left', 'middle');
+
+    var ALL_STAGE = ['oracle', 'bronze', 'seal', 'kai'];
+    var curAll = ALL_STAGE.indexOf(demo.stages[demo.i]);
+    for (var d = 0; d < ALL_STAGE.length; d++) {
+      var has = demo.stages.indexOf(ALL_STAGE[d]) >= 0;
+      var act = d === curAll;
+      ctx.beginPath();
+      ctx.arc(px + 84 + d * 13, py + 41, act ? 3.2 : 2.1, 0, Math.PI * 2);
+      if (!has) {
+        ctx.strokeStyle = 'rgba(150,120,80,0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = act ? C.red : 'rgba(150,120,80,0.42)';
+        ctx.fill();
+      }
     }
+
+    text(demoCh.kai, px + pw - 34, py + 20, 20, C.gold, 'center', 'middle', 'bold');
+    text('点开细看', px + pw - 34, py + 38, 7.5, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
     var pillW = 96, pillH = 34, gap = 12;
     var totalW = pillW * 2 + gap;
@@ -2297,6 +2334,27 @@
       if (ok) ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
     }
     ctx.restore();
+  }
+
+  /* 首屏自动演示：与弹层共用同一套字形 */
+  function startEvoNow(ch) {
+    var stages = evoStages(ch.glyph);
+    var hold = 1.05, fade = 0.3;
+    var t = state.time % (stages.length * hold);
+    var i = Math.floor(t / hold);
+    var local = t - i * hold;
+    return { stages: stages, i: i, a: local < fade ? local / fade : 1 };
+  }
+
+  function drawStartEvo(ch, x, y, size) {
+    var s = startEvoNow(ch);
+    for (var k = 1; k < s.stages.length - 1; k++) evoImage(ch.glyph, s.stages[k]);
+    if (s.a < 1) {
+      var p = (s.i + s.stages.length - 1) % s.stages.length;
+      evoGlyph(ch, s.stages[p], x, y, size, 1 - s.a);
+    }
+    evoGlyph(ch, s.stages[s.i], x, y, size, s.a);
+    return s;
   }
 
   /* ---------------- 演变导出：动图（GIF） ---------------- */
@@ -3245,10 +3303,16 @@
       inRect(x, y, ui.library) || inRect(x, y, ui.close) || inRect(x, y, ui.poster) ||
       inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn) ||
       inRect(x, y, ui.evo) ||
-      inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose);
+      inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
+      inRect(x, y, ui.startEvo);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
+      if (inRect(x, y, ui.startEvo)) {
+        var si = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
+        openEvolution(Data.char(Data.LEVELS[si].char));
+        return;
+      }
       if (inRect(x, y, ui.modeKid)) { setMode('kid'); return; }
       if (inRect(x, y, ui.modeAdult)) { setMode('adult'); return; }
       if (inRect(x, y, ui.library)) { openLibrary(); return; }
