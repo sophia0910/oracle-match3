@@ -1,0 +1,21 @@
+{
+  "description": "甲骨消消乐 · 甲骨文三消小游戏",
+  "compileType": "game",
+  "libVersion": "3.5.6",
+  "appid": "touristappid",
+  "projectname": "oracle-match3",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": false,
+    "postcss": false
+  },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "file",
+        "value": "preview.html"
+      }
+    ]
+  }
+}
