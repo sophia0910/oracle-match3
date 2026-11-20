@@ -1256,6 +1256,28 @@
     IMAGES[id] = img;
   }
 
+  /* 缺图降级：为新字注册楷体字形，PNG 未到位时先写字并注明「楷」 */
+  function kaiDraw(kai) {
+    return function (ctx, cx, cy, s) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold ' + Math.round(s * 0.8) +
+        'px "Kaiti SC","STKaiti","KaiTi","Songti SC",serif';
+      ctx.fillText(kai, cx, cy + s * 0.02);
+      ctx.globalAlpha *= 0.45;
+      ctx.font = Math.round(s * 0.2) + 'px "PingFang SC","Helvetica Neue",sans-serif';
+      ctx.fillText('楷', cx + s * 0.36, cy + s * 0.38);
+      ctx.restore();
+    };
+  }
+
+  function addKaiGlyph(id, kai) {
+    if (!id || !kai || BY_ID[id] != null) return;
+    GLYPHS.push({ id: id, label: kai, name: kai, draw: kaiDraw(kai) });
+    BY_ID[id] = GLYPHS.length - 1;
+  }
+
   function imageReady(img) {
     if (!img) return false;
     if (typeof img.complete === 'boolean' && !img.complete) return false;
@@ -1335,13 +1357,15 @@
 
   function drawById(ctx, id, cx, cy, size, lineWidth, color, photo) {
     var idx = BY_ID[id];
-    paint(ctx, GLYPHS[idx == null ? 0 : idx], cx, cy, size, lineWidth, color, photo);
+    if (idx == null) return;
+    paint(ctx, GLYPHS[idx], cx, cy, size, lineWidth, color, photo);
   }
 
   return {
     GLYPHS: GLYPHS,
     BY_ID: BY_ID,
     registerImage: registerImage,
+    addKaiGlyph: addKaiGlyph,
     draw: draw,
     drawById: drawById
   };

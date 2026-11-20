@@ -3809,22 +3809,22 @@
 
   /* ---------------- 书中拓影字形 ---------------- */
 
-  var GLYPH_IMAGE_IDS = [
-    'sun', 'moon', 'mountain', 'water', 'tree', 'field', 'fire', 'person',
-    'big', 'eye', 'mouth', 'rain', 'cloud', 'river', 'stone', 'soil',
-    'ox', 'sheep', 'bird', 'fish', 'bamboo', 'woods', 'forest', 'bright',
-    'rest', 'peace', 'good', 'pick'
-  ];
-
+  /* 字形图片来源与字库同步：新增字只要在 Data.CHARS 里登记，图到即显示；
+     图未到时先落楷体，避免错画成别的字 */
   function loadGlyphImages() {
-    for (var i = 0; i < GLYPH_IMAGE_IDS.length; i++) {
+    var seen = {};
+    for (var i = 0; i < Data.CHARS.length; i++) {
+      var ch = Data.CHARS[i];
+      if (!ch.glyph || seen[ch.glyph]) continue;
+      seen[ch.glyph] = 1;
+      Glyphs.addKaiGlyph(ch.glyph, ch.kai);
       (function (id) {
         var img = isWx ? wx.createImage() : new Image();
         img.onload = function () {
           Glyphs.registerImage(id, img);
         };
         img.src = 'assets/glyphs/' + id + '.png';
-      })(GLYPH_IMAGE_IDS[i]);
+      })(ch.glyph);
     }
   }
 
