@@ -951,6 +951,141 @@
       adult: '甲骨「户」象单扇门之形，本义为门。',
       bone: '',
       gloss: '「户」是单扇的门，一户人家就从这扇门算起。'
+    },
+    {
+      id: 'chun', glyph: 'chun', kai: '春', pinyin: 'chūn', volume: '自然',
+      meaning: '春天',
+      logic: '画一株嫩芽顶着太阳：太阳一暖，草木就发芽。',
+      kid: '春天来了，太阳底下抽出新芽。',
+      adult: '甲骨「春」从日、从艸，象春日草木萌生。',
+      bone: '',
+      gloss: '「春」由日与草木组成，本义就是春天。'
+    },
+    {
+      id: 'qiu2', glyph: 'qiu2', kai: '秋', pinyin: 'qiū', volume: '自然',
+      meaning: '秋天',
+      logic: '画一只蟋蟀：秋天虫鸣，古人就用它代表秋。',
+      kid: '秋天到了，蟋蟀在草丛里叫。',
+      adult: '甲骨「秋」象蟋蟀之形，或加「火」，本义为秋天。',
+      bone: '',
+      gloss: '有的「秋」写成禾加火：庄稼熟了，可以烧田了。'
+    },
+    {
+      id: 'dong', glyph: 'dong', kai: '冬', pinyin: 'dōng', volume: '自然',
+      meaning: '冬天',
+      logic: '画一根绳子两头打结：一年的线到头了，就是冬。',
+      kid: '绳子两头打了结，表示一年过完了。',
+      adult: '甲骨「冬」象绳两端打结，会「终」之意，后指冬天。',
+      bone: '',
+      gloss: '「冬」本是「终」：一年的日子走到头，结个扣。'
+    },
+    {
+      id: 'hu2', glyph: 'hu2', kai: '狐', pinyin: 'hú', volume: '动物',
+      meaning: '狐狸',
+      logic: '画一只狐狸：尖嘴长身，拖着一条大尾巴。',
+      kid: '一只狐狸，尖嘴大尾巴，脚步轻轻的。',
+      adult: '甲骨「狐」从犬，象狐形，本义为狐狸。',
+      bone: '',
+      gloss: '「狐」是犬旁加一个兽形，古人把它归在犬类。'
+    },
+    {
+      id: 'feng2', glyph: 'feng2', kai: '凤', pinyin: 'fèng', volume: '动物',
+      meaning: '凤凰',
+      logic: '画一只神鸟：高冠、长尾、翅膀张开。',
+      kid: '一只神气的大鸟，就是传说中的凤凰。',
+      adult: '甲骨「凤」象凤鸟之形，突出高冠与华丽的长尾。',
+      bone: '',
+      gloss: '「风」的甲骨文就借「凤」来写，神鸟一来，风就起了。'
+    },
+    {
+      id: 'bao', glyph: 'bao', kai: '豹', pinyin: 'bào', volume: '动物',
+      meaning: '豹子',
+      logic: '画一只豹子：身上点点斑纹，尾巴翘起来。',
+      kid: '一只豹子，身上满是花花点子。',
+      adult: '甲骨「豹」从豸，象豹形，突出身上的斑纹。',
+      bone: '',
+      gloss: '「豹」字里的点点，就是它身上花纹的写照。'
+    },
+    {
+      id: 'ye', glyph: 'ye', kai: '页', pinyin: 'yè', volume: '人体',
+      meaning: '头',
+      logic: '画一个人的脑袋：大大的人头，下面是脖子。',
+      kid: '一个脑袋，上面一只大眼睛。',
+      adult: '甲骨「页」象人头之形，本义为头。',
+      bone: '',
+      gloss: '「页」本是脑袋，后来才借去表示书页。'
+    },
+    {
+      id: 'er2', glyph: 'er2', kai: '儿', pinyin: 'ér', volume: '人体',
+      meaning: '小孩',
+      logic: '画一个小孩：头顶囟门没合，两条腿并着。',
+      kid: '一个小娃娃，脑袋大、腿短短。',
+      adult: '甲骨「儿」象幼儿之形，头顶开口，本义为小孩。',
+      bone: '',
+      gloss: '「儿」画的是头顶囟门未合的小孩。'
+    },
+    {
+      id: 'xiong', glyph: 'xiong', kai: '兄', pinyin: 'xiōng', volume: '人体',
+      meaning: '哥哥',
+      logic: '画一个人张着大嘴：开口说话、发号令的，是兄长。',
+      kid: '一个人张大嘴巴，在跟弟弟妹妹说话。',
+      adult: '甲骨「兄」从人从口，象人张口说话，本义为兄长。',
+      bone: '',
+      gloss: '「兄」是张口发话的人：家里先开口的，就是哥哥。'
+    },
+    {
+      id: 'wu', glyph: 'wu', kai: '午', pinyin: 'wǔ', volume: '器物',
+      meaning: '木杵',
+      logic: '画一根舂米的木杵：中间一横，两头有柄。',
+      kid: '一根舂米的木杵，咚咚地捣米。',
+      adult: '甲骨「午」象杵形，本义为舂米的木杵。',
+      bone: '',
+      gloss: '「午」本是木杵，后来才借去表示地支的午。'
+    },
+    {
+      id: 'shi2', glyph: 'shi2', kai: '示', pinyin: 'shì', volume: '器物',
+      meaning: '祭台',
+      logic: '画一座祭台：一块横石架在石座上。',
+      kid: '一座小石台，古人把祭品放在上面。',
+      adult: '甲骨「示」象祭台之形，本义为神主、祭台。',
+      bone: '',
+      gloss: '「示」是祭台，带示旁的字，多半和祭祀有关。'
+    },
+    {
+      id: 'qie', glyph: 'qie', kai: '且', pinyin: 'qiě', volume: '器物',
+      meaning: '神主',
+      logic: '画一座石台：方方的台身，上面一横。',
+      kid: '一块方方的石台，古人用来放祭品。',
+      adult: '甲骨「且」象礼器或祭台之形，或说为祖先神主。',
+      bone: '',
+      gloss: '「且」像神主牌位，后来才借去表示「而且」。'
+    },
+    {
+      id: 'si', glyph: 'si', kai: '丝', pinyin: 'sī', volume: '器物',
+      meaning: '蚕丝',
+      logic: '画两束蚕丝：两缕线并排绞在一起。',
+      kid: '两缕细细的丝线，绞成了一束。',
+      adult: '甲骨「丝」象两束蚕丝之形，本义为蚕丝。',
+      bone: '',
+      gloss: '两缕丝并在一起就是「丝」，合写就是繁体的「絲」。'
+    },
+    {
+      id: 'peng', glyph: 'peng', kai: '朋', pinyin: 'péng', volume: '器物',
+      meaning: '贝串',
+      logic: '画两串贝壳：一串几个，并排挂着。',
+      kid: '两串贝壳挂在一起，就是「朋」。',
+      adult: '甲骨「朋」象两串贝相连之形，本义为贝串，后指朋友。',
+      bone: '',
+      gloss: '商代用贝作钱，两串贝为一朋，朋友就是「同串」的人。'
+    },
+    {
+      id: 'xin2', glyph: 'xin2', kai: '辛', pinyin: 'xīn', volume: '器物',
+      meaning: '凿子',
+      logic: '画一把凿子：上面是柄，下面是尖刃。',
+      kid: '一把凿子，能凿开木头和石头。',
+      adult: '甲骨「辛」象凿具之形，本义为凿子，引申为辛苦。',
+      bone: '',
+      gloss: '「辛」本是凿子，凿东西费力，才有了「辛苦」。'
     }
   ];
 
@@ -1199,6 +1334,41 @@
       req: [{ id: 'jia', n: 13 }],
       pool: ['jia', 'jia', 'gong2', 'hu4', 'gate', 'robe', 'zhou'],
       spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'chun', title: '第三十六契', moves: 30,
+      learn: ['chun', 'qiu2', 'dong'],
+      req: [{ id: 'chun', n: 12 }],
+      pool: ['chun', 'chun', 'qiu2', 'dong', 'ri', 'mu', 'shui'],
+      spirit: ['ri', 'yue', 'mu']
+    },
+    {
+      char: 'hu2', title: '第三十七契', moves: 30,
+      learn: ['hu2', 'feng2', 'bao'],
+      req: [{ id: 'hu2', n: 12 }],
+      pool: ['hu2', 'hu2', 'feng2', 'bao', 'ma', 'quangou', 'tiger'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'ye', title: '第三十八契', moves: 32,
+      learn: ['ye', 'er2', 'xiong'],
+      req: [{ id: 'ye', n: 13 }],
+      pool: ['ye', 'ye', 'er2', 'xiong', 'ren', 'mueye', 'kou'],
+      spirit: ['ri', 'ren', 'mueye']
+    },
+    {
+      char: 'wu', title: '第三十九契', moves: 32,
+      learn: ['wu', 'shi2', 'qie'],
+      req: [{ id: 'wu', n: 13 }],
+      pool: ['wu', 'wu', 'shi2', 'qie', 'min', 'dou', 'fou'],
+      spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'si', title: '第四十契', moves: 32,
+      learn: ['si', 'peng', 'xin2'],
+      req: [{ id: 'si', n: 13 }],
+      pool: ['si', 'si', 'peng', 'xin2', 'knife', 'daggeraxe', 'arrow'],
+      spirit: ['ri', 'yue', 'shan']
     }
   ];
 
@@ -1317,6 +1487,15 @@
         '商人把猪养在屋里，有屋有畜，才算安顿下来。',
         '「宫」是相连的房屋，「户」是单扇的门。',
         '识得一百零五字，屋子、田地、牲畜，你都能叫出名字了。'
+      ]
+    },
+    {
+      id: 'n14', title: '一年与一朋', need: 120,
+      body: [
+        '商人按天干地支记日，也按四季安排一年的活计。',
+        '春种、秋收、冬藏，字里就藏着这些日子。',
+        '贝是商代的钱，两串贝叫一朋，朋也就是「同串」的人。',
+        '识得一百二十字，一年四季、人情往来，你都能写出来了。'
       ]
     }
   ];

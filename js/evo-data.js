@@ -105,7 +105,22 @@
     yu4: 'bs',
     jia: 'bs',
     gong2: 'bs',
-    hu4: 'bs'
+    hu4: 'bs',
+    chun: 'bs',
+    qiu2: 'bs',
+    dong: 'bs',
+    hu2: 'bs',
+    feng2: 'bs',
+    bao: 'bs',
+    ye: 'bs',
+    er2: 'bs',
+    xiong: 'bs',
+    wu: 'bs',
+    shi2: 'bs',
+    qie: 'bs',
+    si: 'bs',
+    peng: 'bs',
+    xin2: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;
