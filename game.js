@@ -3224,7 +3224,8 @@
     drawOverlay();
     drawPosterPreview();
     drawEvolution();
-    drawToast();
+    /* 字库自带页底提示条，避免同一条 toast 画两遍 */
+    if (state.screen !== 'library') drawToast();
   }
 
   /* ---------------- 输入 ---------------- */
@@ -3442,7 +3443,6 @@
       for (var vi = 0; vi < verses.length; vi++) {
         if (inRect(x, y, verses[vi])) {
           if (verses[vi].locked) showToast('先识「' + verses[vi].kai + '」再读');
-          else if (verses[vi].gloss) showToast(verses[vi].gloss);
           return;
         }
       }
