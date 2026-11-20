@@ -681,6 +681,141 @@
       adult: '甲骨「帚」象手执扫帚之形，本义为扫帚。',
       bone: '帚好',
       gloss: '卜辞多以「帚」为「妇」，「帚好」即妇好。'
+    },
+    {
+      id: 'guang', glyph: 'guang', kai: '光', pinyin: 'guāng', volume: '自然',
+      meaning: '光亮',
+      logic: '画一个人顶着火，火光向上照亮。',
+      kid: '一个人头顶着一团火，把四周照亮。',
+      adult: '甲骨「光」从火在人上，会光明之意，本义为光亮。',
+      bone: '',
+      gloss: '「光」本义为光亮，后引申为光彩、时光。'
+    },
+    {
+      id: 'hong', glyph: 'hong', kai: '虹', pinyin: 'hóng', volume: '自然',
+      meaning: '彩虹',
+      logic: '画一条两头的龙，弯弯地横在天上。',
+      kid: '雨后天边弯弯的彩桥，古人说那是一条双头龙。',
+      adult: '甲骨「虹」象双首之虫（龙）横跨天际，本义为虹。',
+      bone: '出虹',
+      gloss: '卜辞见「虹自北饮于河」，商人把虹看作饮水的龙。'
+    },
+    {
+      id: 'snow', glyph: 'snow', kai: '雪', pinyin: 'xuě', volume: '自然',
+      meaning: '雪',
+      logic: '上面是雨，下面是一把扫帚，扫去雨变成的雪。',
+      kid: '天上落下的雨，冻成了白白的雪。',
+      adult: '甲骨「雪」上雨下彗（扫帚），以扫帚会扫落之意，本义为雪。',
+      bone: '',
+      gloss: '「雪」上雨下彗，本义为雪，后引申为洗雪。'
+    },
+    {
+      id: 'long', glyph: 'long', kai: '龙', pinyin: 'lóng', volume: '动物',
+      meaning: '龙',
+      logic: '画一条龙：大嘴、长身、头上有角。',
+      kid: '一条大龙，张着嘴，头上有角，身子弯弯。',
+      adult: '甲骨「龙」象龙形，巨口、有角、长身，为神异之物。',
+      bone: '',
+      gloss: '「龙」本象龙形，后世成为四灵之一。'
+    },
+    {
+      id: 'zhui', glyph: 'zhui', kai: '隹', pinyin: 'zhuī', volume: '动物',
+      meaning: '短尾鸟',
+      logic: '画一只鸟：短尾巴，尖尖的嘴。',
+      kid: '一只小鸟，短尾巴，尖嘴巴。',
+      adult: '甲骨「隹」象短尾鸟之形，与「鸟」同为鸟类统称。',
+      bone: '',
+      gloss: '卜辞多借「隹」为「唯」，作发语词。'
+    },
+    {
+      id: 'yu2', glyph: 'yu2', kai: '羽', pinyin: 'yǔ', volume: '动物',
+      meaning: '羽毛',
+      logic: '画两根羽毛，并排长着。',
+      kid: '两根轻飘飘的羽毛。',
+      adult: '甲骨「羽」象鸟羽之形，本义为羽毛。',
+      bone: '',
+      gloss: '「羽」本义为鸟羽，后引申为羽翼、五音之羽。'
+    },
+    {
+      id: 'blood', glyph: 'blood', kai: '血', pinyin: 'xuè', volume: '人体',
+      meaning: '血',
+      logic: '画一只器皿，里面点了一点，表示血。',
+      kid: '碗里盛着一点血，古人用它祭祀。',
+      adult: '甲骨「血」从皿加一点，会血在器中之意。',
+      bone: '',
+      gloss: '「血」本义为血，古人以血祭神。'
+    },
+    {
+      id: 'lao', glyph: 'lao', kai: '老', pinyin: 'lǎo', volume: '人体',
+      meaning: '老人',
+      logic: '画一个驼背的人，头发长长的。',
+      kid: '一位弯着腰、头发长长的老爷爷。',
+      adult: '甲骨「老」象老人长发、佝偻之形，本义为年老。',
+      bone: '',
+      gloss: '「老」本义为年老，后引申为敬老、老练。'
+    },
+    {
+      id: 'shen', glyph: 'shen', kai: '身', pinyin: 'shēn', volume: '人体',
+      meaning: '身体',
+      logic: '画一个人的躯干，肚子微微鼓起。',
+      kid: '一个人的身子，肚子圆圆的。',
+      adult: '甲骨「身」象人腹之形，本义为身躯。',
+      bone: '',
+      gloss: '「身」本义为身躯，后引申为自身、身份。'
+    },
+    {
+      id: 'arrow', glyph: 'arrow', kai: '矢', pinyin: 'shǐ', volume: '器物',
+      meaning: '箭',
+      logic: '画一支箭：上面是箭头，下面是箭羽。',
+      kid: '一支箭，尖头朝上，尾巴上有羽毛。',
+      adult: '甲骨「矢」象箭形，有镞、有杆、有羽，本义为箭。',
+      bone: '',
+      gloss: '「矢」本义为箭，后世「箭」行而「矢」多用于文言。'
+    },
+    {
+      id: 'jin', glyph: 'jin', kai: '斤', pinyin: 'jīn', volume: '器物',
+      meaning: '斧头',
+      logic: '画一把斧子，刃朝左，柄在右。',
+      kid: '一把小斧头，能砍木头。',
+      adult: '甲骨「斤」象斧形，横刃装柄，本义为斧。',
+      bone: '',
+      gloss: '「斤」本义为斧，后世借为重量单位。'
+    },
+    {
+      id: 'you', glyph: 'you', kai: '酉', pinyin: 'yǒu', volume: '器物',
+      meaning: '酒坛',
+      logic: '画一只酒坛：尖底、有盖，里面装着酒。',
+      kid: '一只尖底的小酒坛，坛口有盖。',
+      adult: '甲骨「酉」象酒器之形，本义为盛酒之器，后借为地支之酉。',
+      bone: '',
+      gloss: '「酉」本为酒器，酒、尊等字皆从酉得义。'
+    },
+    {
+      id: 'min', glyph: 'min', kai: '皿', pinyin: 'mǐn', volume: '器物',
+      meaning: '器皿',
+      logic: '画一只浅盆，两边有耳。',
+      kid: '一只小盆子，两边有把手。',
+      adult: '甲骨「皿」象饮食之器，本义为器皿。',
+      bone: '',
+      gloss: '「皿」是部首字，盘、盂、盆等字皆从皿。'
+    },
+    {
+      id: 'dou', glyph: 'dou', kai: '豆', pinyin: 'dòu', volume: '器物',
+      meaning: '高脚盘',
+      logic: '画一只高脚盘：上面是盘，下面是细柄和底座。',
+      kid: '一只高脚的小盘子，古人用来盛食物。',
+      adult: '甲骨「豆」象高足食器之形，本义为盛食之器。',
+      bone: '',
+      gloss: '「豆」本为食器，后世才借指豆类。'
+    },
+    {
+      id: 'gu2', glyph: 'gu2', kai: '鼓', pinyin: 'gǔ', volume: '器物',
+      meaning: '鼓',
+      logic: '画一面鼓：鼓身立在架上，旁边有人持槌。',
+      kid: '一面大鼓，咚咚咚地响。',
+      adult: '甲骨「鼓」象鼓形，或加手持槌，会击鼓之意。',
+      bone: '',
+      gloss: '「鼓」本义为击鼓，后指鼓这种乐器。'
     }
   ];
 
@@ -859,6 +994,41 @@
       req: [{ id: 'wang', n: 13 }],
       pool: ['wang', 'wang', 'ce', 'broom', 'gate', 'knife', 'zhu'],
       spirit: ['ri', 'yue', 'tu']
+    },
+    {
+      char: 'guang', title: '第二十六契', moves: 30,
+      learn: ['guang', 'hong', 'snow'],
+      req: [{ id: 'guang', n: 12 }],
+      pool: ['guang', 'guang', 'hong', 'snow', 'ri', 'yue', 'xing'],
+      spirit: ['ri', 'yue', 'xing']
+    },
+    {
+      char: 'long', title: '第二十七契', moves: 30,
+      learn: ['long', 'zhui', 'yu2'],
+      req: [{ id: 'long', n: 12 }],
+      pool: ['long', 'long', 'zhui', 'yu2', 'niao', 'yan', 'ma'],
+      spirit: ['ri', 'mu', 'shan']
+    },
+    {
+      char: 'blood', title: '第二十八契', moves: 32,
+      learn: ['blood', 'lao', 'shen'],
+      req: [{ id: 'blood', n: 13 }],
+      pool: ['blood', 'blood', 'lao', 'shen', 'ren', 'mueye', 'shou'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'arrow', title: '第二十九契', moves: 32,
+      learn: ['arrow', 'jin', 'you'],
+      req: [{ id: 'arrow', n: 13 }],
+      pool: ['arrow', 'arrow', 'jin', 'you', 'knife', 'gong', 'che'],
+      spirit: ['ri', 'yue', 'shan']
+    },
+    {
+      char: 'min', title: '第三十契', moves: 32,
+      learn: ['min', 'dou', 'gu2'],
+      req: [{ id: 'min', n: 13 }],
+      pool: ['min', 'min', 'dou', 'gu2', 'tripod', 'zun', 'jue'],
+      spirit: ['ri', 'yue', 'tu']
     }
   ];
 
@@ -959,6 +1129,15 @@
         '再往后是竹简、帛书、纸张，字才走进寻常人家。',
         '载体换了又换，笔意却一路传下来。',
         '识得七十五字，你已经能读懂一小片商代的天空。'
+      ]
+    },
+    {
+      id: 'n12', title: '字与礼', need: 90,
+      body: [
+        '青铜器上的字，常以「子子孙孙永宝用」收尾。',
+        '一件鼎、一只爵，铸上铭文，就成了家族的凭据。',
+        '所以「尊」「爵」「鼎」这些字，起初都只是器物。',
+        '识得九十字，你已能读懂不少青铜器上的句子。'
       ]
     }
   ];

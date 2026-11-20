@@ -75,7 +75,22 @@
     hu: 'bs',
     wang: 'bs',
     ce: 'bs',
-    broom: 'bs'
+    broom: 'bs',
+    guang: 'bs',
+    hong: 's',
+    snow: 'bs',
+    long: 'bs',
+    zhui: 'bs',
+    yu2: 'bs',
+    blood: 'bs',
+    lao: 'bs',
+    shen: 'bs',
+    arrow: 'bs',
+    jin: 'bs',
+    you: 'bs',
+    min: 'bs',
+    dou: 'bs',
+    gu2: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;
