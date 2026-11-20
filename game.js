@@ -226,6 +226,7 @@
     screen: 'start',
     startSel: Math.min(progress.unlocked - 1, LEVEL_COUNT - 1),
     libraryTab: 'chars',
+    versePage: 0,
     librarySel: null,
     noteSel: null,
     posterCanvas: null,
@@ -587,6 +588,7 @@
   function openLibrary() {
     state.screen = 'library';
     state.libraryTab = 'chars';
+    state.versePage = 0;
     state.librarySel = null;
     state.noteSel = null;
     state.toast = null;
@@ -597,8 +599,8 @@
   function readings() {
     if (readingsCache) return readingsCache;
     readingsCache = [];
-    for (var i = 0; i < Data.LEVELS.length; i++) {
-      var ch = Data.char(Data.LEVELS[i].char);
+    for (var i = 0; i < Data.CHARS.length; i++) {
+      var ch = Data.CHARS[i];
       if (ch && ch.bone) {
         readingsCache.push({
           id: ch.id,
@@ -3224,7 +3226,7 @@
 
   function drawNoteDetail(note) {
     if (!note) return;
-    var cn = ['一', '二', '三', '四', '五', '六'];
+    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
     var idx = Data.NOTES.indexOf(note);
 
     ctx.fillStyle = 'rgba(42,32,20,0.44)';
@@ -3271,13 +3273,16 @@
   }
 
   function drawNotes(w, x, y) {
-    var cn = ['一', '二', '三', '四', '五', '六'];
+    var cn = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
     var cols = 2;
     var gap = 8;
     var cardW = (w - 40 - gap) / cols;
-    var cardH = 132;
     var gx = x + 20;
     var gy = y + 92;
+    var rows = Math.ceil(Data.NOTES.length / cols);
+    var avail = viewH - y - 24 - (gy - y);
+    var cardH = Math.min(132, Math.max(78, avail / rows - gap));
+    var compact = cardH < 112;
 
     for (var i = 0; i < Data.NOTES.length; i++) {
       var note = Data.NOTES[i];
@@ -3296,10 +3301,13 @@
 
       text('手记 ' + cn[i], rx + 12, ry + 20, 10,
         open ? C.gold : 'rgba(58,45,30,0.28)', 'left', 'middle', 'bold');
-      text(note.title, rx + 12, ry + 44, 13.5,
+      text(note.title, rx + 12, ry + (compact ? 38 : 44), 13.5,
         open ? C.ink : 'rgba(58,45,30,0.42)', 'left', 'middle', 'bold');
 
-      if (open) {
+      if (compact) {
+        text(open ? '已启 · 点开' : '识 ' + note.need + ' 字后开', rx + 12, ry + 62, 10,
+          open ? C.red : 'rgba(58,45,30,0.38)', 'left', 'middle');
+      } else if (open) {
         var lines = wrap(note.body[0], cardW - 24, 10);
         if (lines.length > 3) lines = lines.slice(0, 3);
         drawLines(lines, rx + 12, ry + 66, 15, 10, C.inkSoft, 'left');
@@ -3316,7 +3324,6 @@
       });
     }
 
-    var rows = Math.ceil(Data.NOTES.length / cols);
     var endY = gy + rows * (cardH + gap) - gap;
     return Math.min(y + (viewH - y - 12) - 26, endY + 28);
   }
@@ -3416,10 +3423,15 @@
     var rows = Math.ceil(Data.CHARS.length / 6);
     var cellH = Math.min(66, Math.max(40, (viewH - 168) / rows));
     var charsH = 92 + rows * cellH + 44;
+    var versesH = 520;
     var y = state.libraryTab === 'chars'
       ? Math.max(safeTop + 10, (viewH - charsH) / 2)
-      : safeTop + 10;
-    var h = state.libraryTab === 'chars' ? charsH : viewH - y - 12;
+      : state.libraryTab === 'verses'
+        ? Math.max(safeTop + 10, (viewH - versesH) / 2)
+        : safeTop + 10;
+    var h = state.libraryTab === 'chars'
+      ? charsH
+      : state.libraryTab === 'verses' ? versesH : viewH - y - 12;
     drawCard(x, y, w, h);
 
     text('字库', x + 20, y + 30, 18, C.ink, 'left', 'middle', 'bold');
@@ -3431,21 +3443,36 @@
     ui.tabChars = { x: x + 20, y: y + 48, w: tabW, h: tabH };
     ui.tabVerses = { x: x + 20 + tabW + tabGap, y: y + 48, w: tabW, h: tabH };
     ui.tabNotes = { x: x + 20 + (tabW + tabGap) * 2, y: y + 48, w: tabW, h: tabH };
-    drawLibraryTab(ui.tabChars, '字库 ' + learnedCount + ' / ' + Data.CHARS.length,
+    drawLibraryTab(ui.tabChars, '字库 ' + learnedCount + ' / ' + Data.CHARS.length + ' 字',
       state.libraryTab === 'chars');
-    drawLibraryTab(ui.tabVerses, '读辞 ' + unlockedCount + ' / ' + list.length,
+    drawLibraryTab(ui.tabVerses, '读辞 ' + unlockedCount + ' / ' + list.length + ' 篇',
       state.libraryTab === 'verses');
-    drawLibraryTab(ui.tabNotes, '手记 ' + notesOn + ' / ' + Data.NOTES.length,
+    drawLibraryTab(ui.tabNotes, '手记 ' + notesOn + ' / ' + Data.NOTES.length + ' 篇',
       state.libraryTab === 'notes');
 
     ui.libraryCells = [];
     ui.verseCells = [];
     ui.noteCells = [];
+    ui.versePrev = null;
+    ui.verseNext = null;
 
     if (state.libraryTab === 'verses') {
-      drawReadings(list, w, x, y);
+      var perPage = 6;
+      var pages = Math.max(1, Math.ceil(list.length / perPage));
+      if (state.versePage >= pages) state.versePage = pages - 1;
+      if (state.versePage < 0) state.versePage = 0;
+      var spare = (y + h - 34) - (y + 92 + 356) - 54;
+      var oy = Math.max(0, spare / 2);
+      drawReadings(list.slice(state.versePage * perPage, state.versePage * perPage + perPage),
+        w, x, y + oy);
+      ui.versePrev = { x: x + w / 2 - 78, y: y + oy + 448, w: 34, h: 26 };
+      ui.verseNext = { x: x + w / 2 + 44, y: y + oy + 448, w: 34, h: 26 };
+      drawButton(ui.versePrev, '‹', { ghost: true, size: 14, disabled: state.versePage === 0 });
+      drawButton(ui.verseNext, '›', { ghost: true, size: 14, disabled: state.versePage >= pages - 1 });
+      text('第 ' + (state.versePage + 1) + ' / ' + pages + ' 页',
+        x + w / 2, y + oy + 461, 10, C.inkSoft, 'center', 'middle');
       text('每识一字，其身后的卜辞自明 · 已能释读 ' + unlockedCount + ' / ' + list.length,
-        x + w / 2, y + 474, 10, C.inkFaint, 'center', 'middle');
+        x + w / 2, y + oy + 492, 10, C.inkFaint, 'center', 'middle');
     } else if (state.libraryTab === 'notes') {
       var footY = drawNotes(w, x, y);
       text('识得愈多，史官翻得愈多 · 已启 ' + notesOn + ' / ' + Data.NOTES.length,
@@ -3740,18 +3767,28 @@
         state.libraryTab = 'chars';
         state.librarySel = null;
         state.noteSel = null;
+        ui.libraryCells = [];
+        ui.verseCells = [];
+        ui.noteCells = [];
         return;
       }
       if (inRect(x, y, ui.tabVerses)) {
         state.libraryTab = 'verses';
+        state.versePage = 0;
         state.librarySel = null;
         state.noteSel = null;
+        ui.libraryCells = [];
+        ui.verseCells = [];
+        ui.noteCells = [];
         return;
       }
       if (inRect(x, y, ui.tabNotes)) {
         state.libraryTab = 'notes';
         state.librarySel = null;
         state.noteSel = null;
+        ui.libraryCells = [];
+        ui.verseCells = [];
+        ui.noteCells = [];
         return;
       }
       if (state.noteSel) {
@@ -3762,6 +3799,17 @@
         if (inRect(x, y, ui.evoBtn)) { openEvolution(Data.char(state.librarySel)); return; }
         if (inRect(x, y, ui.libraryClose)) state.librarySel = null;
         return;
+      }
+      if (state.libraryTab === 'verses') {
+        var pages = Math.max(1, Math.ceil(readings().length / 6));
+        if (ui.versePrev && inRect(x, y, ui.versePrev) && state.versePage > 0) {
+          state.versePage--;
+          return;
+        }
+        if (ui.verseNext && inRect(x, y, ui.verseNext) && state.versePage < pages - 1) {
+          state.versePage++;
+          return;
+        }
       }
       var notes = ui.noteCells || [];
       for (var ni = 0; ni < notes.length; ni++) {
