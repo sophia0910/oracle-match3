@@ -2106,7 +2106,7 @@
       'rgba(90,74,52,0.48)', 'center', 'middle');
     text('停手七秒或点「提示」，会亮出一处可消', cx, foot2Y, 10.5,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text(fitText('每契约两三分钟 · 共十契三十字 · 字形源自汉典 CC0', 9, w - 32),
+    text(fitText('共十契三十字 · 字形参考《趣味的甲骨金文》等', 9, w - 32),
       cx, metaY, 9, 'rgba(90,74,52,0.34)', 'center', 'middle');
   }
 
