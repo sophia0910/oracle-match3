@@ -1914,9 +1914,17 @@
   function drawStart() {
     var cx = viewW / 2;
     var w = Math.min(layout.contentW - 8, 332);
-    var h = 400;
+    /* 卡片随屏高长高，长屏不再上下各空两百多像素；375 及以下仍是 400 */
+    var h = Math.max(400, Math.min(520, Math.round(viewH * 0.6)));
     var x = cx - w / 2;
     var y = Math.max(safeTop + 12, viewH / 2 - h / 2);
+
+    /* 多出来的高度平均摊进五处间距，字号不动，只加呼吸 */
+    var gapAdd = (h - 400) / 5;
+    var infoY = y + 192 + gapAdd;
+    var primaryY = y + 222 + gapAdd * 2;
+    var rowY = y + 282 + gapAdd * 3;
+    var footY = y + 342 + gapAdd * 4;
 
     drawCard(x, y, w, h);
     drawOrnament(cx, y + 38);
@@ -1983,34 +1991,36 @@
       var invite = challenge.step
         ? '好友在「' + clv.title + ' · ' + cch.kai + '」用 ' + challenge.step + ' 步成文'
         : '好友邀你共契「' + clv.title + ' · ' + cch.kai + '」';
-      text(invite, cx, y + 184, 11, C.gold, 'center', 'middle', 'bold');
-      text(fitText(infoLine, 10, w - 40), cx, y + 204, 10,
+      text(invite, cx, infoY - 8, 11, C.gold, 'center', 'middle', 'bold');
+      text(fitText(infoLine, 10, w - 40), cx, infoY + 12, 10,
         'rgba(90,74,52,0.5)', 'center', 'middle');
     } else {
-      text(infoLine, cx, y + 192, 11, C.gold, 'center', 'middle', 'bold');
+      text(infoLine, cx, infoY, 11, C.gold, 'center', 'middle', 'bold');
     }
 
     var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
     var allDone = progress.unlocked >= LEVEL_COUNT;
-    ui.primary = { x: cx - 100, y: y + 222, w: 200, h: 46 };
+    ui.primary = { x: cx - 100, y: primaryY, w: 200, h: 46 };
     if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title);
     else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」');
     else drawButton(ui.primary, '继续「' + Data.LEVELS[nextIndex].title + '」');
 
-    var bw = 98, bgap = 8;
+    /* 副按钮宽按卡片内宽收，320 窄屏也不会探出卡片 */
+    var bgap = 8;
+    var bw = Math.min(98, Math.floor((w - 36 - bgap * 2) / 3));
     var bx0 = cx - (bw * 3 + bgap * 2) / 2;
-    ui.pick = { x: bx0, y: y + 282, w: bw, h: 38 };
-    ui.library = { x: bx0 + bw + bgap, y: y + 282, w: bw, h: 38 };
-    ui.quick = { x: bx0 + (bw + bgap) * 2, y: y + 282, w: bw, h: 38 };
+    ui.pick = { x: bx0, y: rowY, w: bw, h: 38 };
+    ui.library = { x: bx0 + bw + bgap, y: rowY, w: bw, h: 38 };
+    ui.quick = { x: bx0 + (bw + bgap) * 2, y: rowY, w: bw, h: 38 };
     drawButton(ui.pick, '选契', { ghost: true, size: 12.5 });
     drawButton(ui.library, '字库', { ghost: true, size: 12.5 });
     drawButton(ui.quick, '快契', { ghost: true, size: 12.5 });
 
-    text('字库随时可翻 · 不必先通关', cx, y + 342, 10,
+    text('字库随时可翻 · 不必先通关', cx, footY, 10,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text('每契约两三分钟 · 共十契三十字', cx, y + 360, 9.5,
+    text('每契约两三分钟 · 共十契三十字', cx, footY + 18, 9.5,
       'rgba(90,74,52,0.4)', 'center', 'middle');
-    text('字形源自汉典 · CC0', cx, y + 378, 9,
+    text('字形源自汉典 · CC0', cx, footY + 36, 9,
       'rgba(90,74,52,0.34)', 'center', 'middle');
   }
 
