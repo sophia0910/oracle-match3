@@ -276,69 +276,249 @@
       adult: '甲骨「囚」从人在囗中，会拘禁之意。',
       bone: '',
       gloss: '卜辞有「囚」字，与拘系、囚俘相关。'
+    },
+    {
+      id: 'xing', glyph: 'star', kai: '星', pinyin: 'xīng', volume: '自然',
+      meaning: '星辰',
+      logic: '上面是几颗星，下面画一棵小草，星声从生。',
+      kid: '天上洒下几颗小星星，下面长着一棵小草。',
+      adult: '甲骨「星」从晶（众星）从生，生亦声，会意兼形声；或径作数点之星。',
+      bone: '',
+      gloss: '「星」在卜辞中与天象、祭祀相关。'
+    },
+    {
+      id: 'feng', glyph: 'wind', kai: '风', pinyin: 'fēng', volume: '自然',
+      meaning: '风',
+      logic: '借凤鸟的形状表示风：神鸟展翅，风就来了。',
+      kid: '一只神鸟扇扇翅膀，风就吹起来了。',
+      adult: '甲骨无「风」本字，多借「凤」为之；凤鸟展翅生风，后世加「凡」声作「風」。',
+      bone: '',
+      gloss: '卜辞借「凤」问风之来否。'
+    },
+    {
+      id: 'lei', glyph: 'thunder', kai: '雷', pinyin: 'léi', volume: '自然',
+      meaning: '雷声',
+      logic: '雨点下面画一块田，用雨中的田形表示隆隆雷声。',
+      kid: '下雨啦，雷声轰隆隆滚过田头。',
+      adult: '甲骨「雷」多从雨、从田，或以田象雷声，会雨中雷鸣之意。',
+      bone: '',
+      gloss: '「雷」在卜辞中与风雨、年成相关。'
+    },
+    {
+      id: 'quan', glyph: 'spring', kai: '泉', pinyin: 'quán', volume: '自然',
+      meaning: '泉水',
+      logic: '山崖下有一汪水，水从石缝里涌出来。',
+      kid: '石头缝里咕嘟咕嘟冒出一股清泉。',
+      adult: '甲骨「泉」象泉水自石穴流出，本义为水源。',
+      bone: '',
+      gloss: '卜辞「泉」多用作水名、地名。'
+    },
+    {
+      id: 'gu', glyph: 'valley', kai: '谷', pinyin: 'gǔ', volume: '自然',
+      meaning: '山谷',
+      logic: '两山夹着一道水，水从谷口流出来。',
+      kid: '两座山中间有一条小河，那就是山谷。',
+      adult: '甲骨「谷」象两山之间流水，上象谷口，下象水出。',
+      bone: '',
+      gloss: '卜辞「谷」多指山谷之地。'
+    },
+    {
+      id: 'qiuqiu', glyph: 'hill', kai: '丘', pinyin: 'qiū', volume: '自然',
+      meaning: '土丘',
+      logic: '平地上鼓起两座小土丘。',
+      kid: '地上鼓起两个小土包，就是小山丘。',
+      adult: '甲骨「丘」象平地隆起之土丘，或二峰并立。',
+      bone: '',
+      gloss: '卜辞「丘」常用作地名。'
+    },
+    {
+      id: 'ma', glyph: 'horse', kai: '马', pinyin: 'mǎ', volume: '动物',
+      meaning: '马',
+      logic: '画一匹侧立的马：大眼、尖耳、鬃毛、长尾和四条腿。',
+      kid: '一匹小马，竖着尖耳朵，甩着长尾巴。',
+      adult: '甲骨「马」象马侧视，首有耳、颈有鬃，长尾四足，特征鲜明。',
+      bone: '',
+      gloss: '卜辞「马」或指马牲，或为方国名。'
+    },
+    {
+      id: 'quangou', glyph: 'dog', kai: '犬', pinyin: 'quǎn', volume: '动物',
+      meaning: '狗',
+      logic: '画一只侧立的狗：瘦腹、卷尾、竖耳。',
+      kid: '一只小狗，肚子瘦瘦的，尾巴往上翘。',
+      adult: '甲骨「犬」象狗侧视，腹瘦尾卷；与「豕」腹肥尾垂相对。',
+      bone: '',
+      gloss: '卜辞常以犬为祭牲。'
+    },
+    {
+      id: 'shizhu', glyph: 'pig', kai: '豕', pinyin: 'shǐ', volume: '动物',
+      meaning: '猪',
+      logic: '画一只侧立的猪：肚子肥圆，尾巴短垂。',
+      kid: '一只胖小猪，肚子圆鼓鼓，尾巴短短的。',
+      adult: '甲骨「豕」象猪侧视，腹肥尾短；与「犬」以腹、尾之形相别。',
+      bone: '',
+      gloss: '卜辞「豕」多记用豕为牲。'
+    },
+    {
+      id: 'er', glyph: 'ear', kai: '耳', pinyin: 'ěr', volume: '人体',
+      meaning: '耳朵',
+      logic: '画一只耳朵的轮廓，中间一点是耳窍。',
+      kid: '一只耳朵，中间有个小洞洞。',
+      adult: '甲骨「耳」象人耳之形，中加一点或短画以示耳窍。',
+      bone: '疾耳',
+      gloss: '卜问耳疾之事。'
+    },
+    {
+      id: 'xin', glyph: 'heart', kai: '心', pinyin: 'xīn', volume: '人体',
+      meaning: '心脏',
+      logic: '画一颗心的轮廓，中间几道纹是心房。',
+      kid: '一颗心，中间有几道弯弯的纹。',
+      adult: '甲骨「心」象心脏轮廓，中作数画以示心房心室。',
+      bone: '疾心',
+      gloss: '卜问心疾之事。'
+    },
+    {
+      id: 'shou', glyph: 'head', kai: '首', pinyin: 'shǒu', volume: '人体',
+      meaning: '头',
+      logic: '画一个人的头：上有头发，中间一只眼睛。',
+      kid: '一个人的脑袋，上面竖着几根头发，中间有只眼睛。',
+      adult: '甲骨「首」象人头，上有发，中有目，本义为头。',
+      bone: '疾首',
+      gloss: '卜问头疾之事。'
+    },
+    {
+      id: 'zhou', glyph: 'boat', kai: '舟', pinyin: 'zhōu', volume: '器物',
+      meaning: '船',
+      logic: '画一只小船：两边船帮，中间几道横档。',
+      kid: '一只小船，中间搭着几根横木。',
+      adult: '甲骨「舟」象小舟侧视，两侧为船帮，中横为舱档。',
+      bone: '',
+      gloss: '卜辞「舟」与渡水、舟运相关。'
+    },
+    {
+      id: 'gong', glyph: 'bow', kai: '弓', pinyin: 'gōng', volume: '器物',
+      meaning: '弓箭',
+      logic: '画一把弯弓，弦绷得紧紧的。',
+      kid: '一把弯弯的弓，弦拉得直直的。',
+      adult: '甲骨「弓」象弓身弯曲、弓弦绷紧之形。',
+      bone: '',
+      gloss: '卜辞「弓」与射猎、兵器相关。'
+    },
+    {
+      id: 'che', glyph: 'cart', kai: '车', pinyin: 'chē', volume: '器物',
+      meaning: '车',
+      logic: '画一辆车：两个轮子，中间一根车轴，前面伸出车辕。',
+      kid: '一辆小车，两个圆轮子中间穿着一根轴。',
+      adult: '甲骨「车」多作俯视或侧视，象双轮、车轴、车辕之形。',
+      bone: '',
+      gloss: '卜辞「车」多记车马、田猎之事。'
     }
   ];
 
   var LEVELS = [
     {
       char: 'ri', title: '第一契', moves: 20,
+      learn: ['ri', 'yun', 'yu'],
       req: [{ id: 'ri', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'tian'],
       spirit: []
     },
     {
       char: 'yue', title: '第二契', moves: 20,
+      learn: ['yue', 'chuan', 'shi'],
       req: [{ id: 'yue', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'huo'],
       spirit: ['ri']
     },
     {
       char: 'shan', title: '第三契', moves: 22,
+      learn: ['shan', 'tu', 'tian'],
       req: [{ id: 'shan', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'mu', 'huo', 'shi'],
       spirit: ['ri', 'yue']
     },
     {
       char: 'shui', title: '第四契', moves: 24,
+      learn: ['shui', 'she', 'yufish'],
       req: [{ id: 'shui', n: 10 }],
       pool: ['ri', 'yue', 'shan', 'shui', 'huo', 'chuan', 'shi', 'mu'],
       spirit: ['ri', 'yue', 'shan']
     },
     {
       char: 'mu', title: '第五契', moves: 22,
+      learn: ['mu', 'zhu', 'cai'],
       req: [{ id: 'mu', n: 11 }],
       pool: ['ri', 'shan', 'shui', 'mu', 'huo', 'tian', 'ren'],
       spirit: ['ri', 'yue', 'shui']
     },
     {
       char: 'huo', title: '第六契', moves: 22,
+      learn: ['huo', 'ren', 'da'],
       req: [{ id: 'huo', n: 11 }],
       pool: ['shui', 'mu', 'huo', 'tu', 'shi', 'ren', 'tian'],
       spirit: ['ri', 'shan', 'mu']
     },
     {
       char: 'lin', title: '第七契', moves: 24,
+      learn: ['lin', 'niao', 'niu'],
       req: [{ id: 'mu', n: 20 }],
       pool: ['mu', 'mu', 'shui', 'huo', 'tian', 'ren', 'yu'],
       spirit: ['ri', 'shui', 'mu']
     },
     {
       char: 'ming', title: '第八契', moves: 26,
+      learn: ['ming', 'mueye', 'kou'],
       req: [{ id: 'ri', n: 15 }, { id: 'yue', n: 15 }],
       pool: ['ri', 'yue', 'ri', 'yue', 'shui', 'mu', 'yun', 'yu'],
       spirit: ['ri', 'yue', 'mu']
     },
     {
       char: 'xiu', title: '第九契', moves: 26,
+      learn: ['xiu', 'an', 'hao'],
       req: [{ id: 'ren', n: 15 }, { id: 'mu', n: 15 }],
       pool: ['ren', 'mu', 'ren', 'mu', 'shui', 'tian', 'niao', 'yufish'],
       spirit: ['ri', 'mu', 'ren']
     },
     {
       char: 'sen', title: '第十契', moves: 28,
+      learn: ['sen', 'yang', 'qiu'],
       req: [{ id: 'mu', n: 24 }],
       pool: ['mu', 'mu', 'mu', 'shui', 'tu', 'huo', 'tian', 'ren', 'zhu'],
       spirit: ['ri', 'yue', 'mu', 'lin']
+    },
+    {
+      char: 'xing', title: '第十一契', moves: 24,
+      learn: ['xing', 'feng', 'lei'],
+      req: [{ id: 'xing', n: 10 }],
+      pool: ['xing', 'xing', 'feng', 'lei', 'ri', 'yue', 'yun'],
+      spirit: ['ri', 'yue', 'shan']
+    },
+    {
+      char: 'quan', title: '第十二契', moves: 26,
+      learn: ['quan', 'gu', 'qiuqiu'],
+      req: [{ id: 'quan', n: 11 }],
+      pool: ['quan', 'quan', 'gu', 'qiuqiu', 'shui', 'tu', 'shan'],
+      spirit: ['ri', 'yue', 'shui']
+    },
+    {
+      char: 'ma', title: '第十三契', moves: 26,
+      learn: ['ma', 'quangou', 'shizhu'],
+      req: [{ id: 'ma', n: 11 }],
+      pool: ['ma', 'ma', 'quangou', 'shizhu', 'niu', 'yang', 'niao'],
+      spirit: ['ri', 'mu', 'tu']
+    },
+    {
+      char: 'er', title: '第十四契', moves: 28,
+      learn: ['er', 'xin', 'shou'],
+      req: [{ id: 'er', n: 12 }],
+      pool: ['er', 'er', 'xin', 'shou', 'ren', 'mueye', 'kou'],
+      spirit: ['ri', 'ren', 'mu']
+    },
+    {
+      char: 'zhou', title: '第十五契', moves: 30,
+      learn: ['zhou', 'gong', 'che'],
+      req: [{ id: 'zhou', n: 12 }],
+      pool: ['zhou', 'zhou', 'gong', 'che', 'tian', 'ren', 'shui'],
+      spirit: ['ri', 'yue', 'shui']
     }
   ];
 

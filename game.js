@@ -1,4 +1,4 @@
-/* 甲骨消消乐 · 微信小游戏主程序（十契垂直切片） */
+/* 甲骨消消乐 · 微信小游戏主程序（十五契垂直切片） */
 (function () {
   'use strict';
 
@@ -142,6 +142,17 @@
         return !!Data.BY_ID[id];
       });
     }
+    /* 旧存档只记了每契目标字：补齐该契应识的另外两字，并顺势解锁下一契 */
+    for (var li = 0; li < Data.LEVELS.length; li++) {
+      var olv = Data.LEVELS[li];
+      if (!olv.learn || progress.learned.indexOf(olv.char) < 0) continue;
+      for (var lj = 0; lj < olv.learn.length; lj++) {
+        if (progress.learned.indexOf(olv.learn[lj]) < 0) progress.learned.push(olv.learn[lj]);
+      }
+      progress.unlocked = Math.max(progress.unlocked,
+        Math.min(LEVEL_COUNT, li + 2));
+    }
+    saveProgress();
   }
 
   /* ---------------- 分享挑战 ---------------- */
@@ -188,7 +199,7 @@
     var lv = levelConfig();
     var used = state.steps || 1;
     var title = full
-      ? '甲骨消消乐 · 我已十契圆满，识得三十字，来闯「' + lv.title + '」？'
+      ? '甲骨消消乐 · 我已 ' + LEVEL_COUNT + ' 契圆满，识得 ' + Data.CHARS.length + ' 字，来闯「' + lv.title + '」？'
       : '甲骨消消乐 · 我在「' + lv.title + ' · ' + Data.char(lv.char).kai
         + '」用了 ' + used + ' 步成文，敢来挑战？';
     try {
@@ -220,6 +231,7 @@
     posterCanvas: null,
     evo: null,
     levelIndex: 0,
+    levelPage: 0,
     grid: null,
     tiles: [],
     moves: 0,
@@ -532,8 +544,12 @@
   }
 
   function completeLevel() {
-    var ch = Data.char(levelConfig().char);
-    if (progress.learned.indexOf(ch.id) < 0) progress.learned.push(ch.id);
+    var lv = levelConfig();
+    var ids = lv.learn && lv.learn.length ? lv.learn : [lv.char];
+    for (var i = 0; i < ids.length; i++) {
+      if (!Data.BY_ID[ids[i]]) continue;
+      if (progress.learned.indexOf(ids[i]) < 0) progress.learned.push(ids[i]);
+    }
     progress.unlocked = Math.max(progress.unlocked, Math.min(LEVEL_COUNT, state.levelIndex + 2));
     saveProgress();
   }
@@ -1855,6 +1871,8 @@
     var fill = opts.ink ? C.ink : (opts.ghost ? 'rgba(255,250,238,0.7)' : C.red);
     var color = opts.ink ? C.cream : (opts.ghost ? C.inkSoft : C.cream);
     var x = rect.x, y = rect.y, w = rect.w, h = rect.h;
+    ctx.save();
+    if (opts.disabled) ctx.globalAlpha *= 0.35;
 
     if (!opts.ghost) {
       ctx.save();
@@ -1900,6 +1918,7 @@
     }
 
     text(label, tx, y + h / 2 + 1, fs, color, 'center', 'middle', 'bold');
+    ctx.restore();
   }
 
   /* ---------------- 弹层：开始 ---------------- */
@@ -2076,8 +2095,9 @@
     ui.prev = { x: x + 4, y: dotsY - 22, w: 44, h: 44 };
     ui.next = { x: x + 72, y: dotsY - 22, w: 44, h: 44 };
 
-    var dotR = 4.5;
-    var dotGap = Math.min(14, (w - 40 - 48 - dotR * 2) / 9);
+    var dotR = LEVEL_COUNT > 10 ? 3.6 : 4.5;
+    var dotGap = Math.min(LEVEL_COUNT > 10 ? 10 : 14,
+      (w - 40 - 48 - dotR * 2) / Math.max(1, LEVEL_COUNT - 1));
     var dotRight = x + w - 20 - dotR;
     for (var k = 0; k < LEVEL_COUNT; k++) {
       var kch = Data.char(Data.LEVELS[k].char);
@@ -2106,7 +2126,8 @@
       'rgba(90,74,52,0.48)', 'center', 'middle');
     text('停手七秒或点「提示」，会亮出一处可消', cx, foot2Y, 10.5,
       'rgba(90,74,52,0.48)', 'center', 'middle');
-    text(fitText('共十契三十字 · 字形参考《趣味的甲骨金文》等', 9, w - 32),
+    text(fitText('共 ' + LEVEL_COUNT + ' 契 ' + Data.CHARS.length +
+      ' 字 · 字形参考汉典与《趣味的甲骨金文》等', 9, w - 32),
       cx, metaY, 9, 'rgba(90,74,52,0.34)', 'center', 'middle');
   }
 
@@ -2129,10 +2150,11 @@
       on ? C.red : 'rgba(58,45,30,0.5)', 'center', 'middle', 'bold');
   }
 
-  /* ---------------- 选契：十契地图 ---------------- */
+  /* ---------------- 选契：契图 ---------------- */
 
   function openLevels() {
     state.screen = 'levels';
+    state.levelPage = Math.floor(state.levelIndex / 10);
     state.librarySel = null;
     state.noteSel = null;
     state.toast = null;
@@ -2143,23 +2165,31 @@
     var w = Math.min(layout.contentW - 8, 332);
     var cols = 2;
     var gap = 10;
+    var perPage = 10;
+    var pages = Math.ceil(LEVEL_COUNT / perPage);
+    var page = Math.max(0, Math.min(pages - 1, state.levelPage || 0));
+    state.levelPage = page;
+    var start = page * perPage;
+    var count = Math.min(perPage, LEVEL_COUNT - start);
     var cellW = (w - 32 - gap) / cols;
-    var cellH = 58;
-    var rows = Math.ceil(LEVEL_COUNT / cols);
+    var cellH = Math.min(58, Math.max(46, (viewH - 240) / 5 - gap));
+    var rows = Math.ceil(count / cols);
     var h = 82 + rows * (cellH + gap) - gap + 78;
     var x = cx - w / 2;
     var y = Math.max(safeTop + 10, (viewH - h) / 2);
 
     drawCard(x, y, w, h);
-    text('十契', cx, y + 32, 17, C.ink, 'center', 'middle', 'bold');
+    text('契图', cx, y + 32, 17, C.ink, 'center', 'middle', 'bold');
     text('已识 ' + progress.learned.length + ' / ' + Data.CHARS.length +
-      ' 字 · 已开 ' + progress.unlocked + ' / ' + LEVEL_COUNT + ' 契',
+      ' 字 · 已开 ' + progress.unlocked + ' / ' + LEVEL_COUNT + ' 契' +
+      (pages > 1 ? ' · 第 ' + (page + 1) + '/' + pages + ' 页' : ''),
       cx, y + 56, 10.5, C.inkSoft, 'center', 'middle');
 
     ui.levelCells = [];
-    for (var i = 0; i < LEVEL_COUNT; i++) {
-      var col = i % cols;
-      var row = Math.floor(i / cols);
+    for (var n = 0; n < count; n++) {
+      var i = start + n;
+      var col = n % cols;
+      var row = Math.floor(n / cols);
       var bx = x + 16 + col * (cellW + gap);
       var by = y + 80 + row * (cellH + gap);
       var lv = Data.LEVELS[i];
@@ -2188,7 +2218,17 @@
       ui.levelCells.push({ x: bx, y: by, w: cellW, h: cellH, index: i, locked: !unlocked });
     }
 
-    ui.levelsClose = { x: cx - 60, y: y + h - 54, w: 120, h: 38 };
+    if (pages > 1) {
+      ui.levelPrev = { x: x + 16, y: y + h - 54, w: 74, h: 38 };
+      ui.levelNext = { x: x + w - 90, y: y + h - 54, w: 74, h: 38 };
+      drawButton(ui.levelPrev, '上一页', {
+        ghost: true, size: 11.5, disabled: page <= 0
+      });
+      drawButton(ui.levelNext, '下一页', {
+        ghost: true, size: 11.5, disabled: page >= pages - 1
+      });
+    }
+    ui.levelsClose = { x: cx - 42, y: y + h - 54, w: 84, h: 38 };
     drawButton(ui.levelsClose, '合上', { ghost: true, size: 12 });
   }
 
@@ -2328,8 +2368,8 @@
     posterText(p, '契', 0, 2, 48, '#FBF3E2', 'center', 'middle', 'bold');
     p.restore();
 
-    posterText(p, '甲骨消消乐 · 十契三十字', 540, 1356, 21,
-      'rgba(58,45,30,0.32)', 'center', 'middle');
+    posterText(p, '甲骨消消乐 · ' + LEVEL_COUNT + ' 契 ' + Data.CHARS.length + ' 字',
+      540, 1356, 21, 'rgba(58,45,30,0.32)', 'center', 'middle');
 
     if (isWx) {
       try {
@@ -2969,7 +3009,7 @@
 
     ctx.restore();
 
-    text('金文 · 小篆字形取自维基共享资源', cx, y + h + 16, 9,
+    text('金文 · 小篆字形取自汉典与维基共享资源', cx, y + h + 16, 9,
       'rgba(255,248,235,0.55)', 'center', 'middle');
   }
 
@@ -3029,11 +3069,11 @@
 
     drawSeal(cx, y + 58, 54, all ? '成' : quickFail ? '时' : '再');
 
-    text(all ? '十契圆满' : quickFail ? '九十秒已尽' : '步数用尽',
+    text(all ? LEVEL_COUNT + ' 契圆满' : quickFail ? '九十秒已尽' : '步数用尽',
       cx, y + 116, 23, C.ink, 'center', 'middle', 'bold');
 
     var sub = all
-      ? '你已识得三十个甲骨字'
+      ? '你已识得 ' + Data.CHARS.length + ' 个甲骨字'
       : quickFail
         ? '快契未成，再开一局'
         : '卜辞未验，再试一契';
@@ -3043,7 +3083,7 @@
       cx, y + 184, 17, all ? C.red : C.ink, 'center', 'middle', 'bold');
 
     var lv = levelConfig();
-    text(all ? '三十字已入囊中'
+    text(all ? Data.CHARS.length + ' 字已入囊中'
       : quickFail
         ? '本契目标「' + Data.char(lv.char).kai + '」· 已收 ' + collectedTotal() + '/' + totalRequired()
         : '本契目标「' + Data.char(lv.char).kai + '」· 步数 ' + state.moves,
@@ -3054,7 +3094,7 @@
     if (all) {
       ui.secondary = { x: cx - 100, y: y + 302, w: 94, h: 38 };
       ui.share = { x: cx + 6, y: y + 302, w: 94, h: 38 };
-      drawButton(ui.primary, '进入字库 · 看三十字');
+      drawButton(ui.primary, '进入字库 · 看 ' + Data.CHARS.length + ' 字');
       drawButton(ui.secondary, '再练一遍', { ghost: true, size: 12 });
       drawButton(ui.share, '回到首页', { ghost: true, size: 12 });
     } else {
@@ -3099,10 +3139,9 @@
       active ? C.cream : C.inkSoft, 'center', 'middle', 'bold');
   }
 
-  function drawLibraryGrid(w, x, y) {
+  function drawLibraryGrid(w, x, y, cellH) {
     var cols = 6;
     var cw = (w - 40) / cols;
-    var cellH = 58;
     var gx = x + 20;
     var gy = y + 92;
     for (var i = 0; i < Data.CHARS.length; i++) {
@@ -3121,10 +3160,11 @@
       ctx.stroke();
 
       var ccx = cellX + cw / 2;
-      var ccy = cellY + 27;
-      Glyphs.drawById(ctx, ch.glyph, ccx, ccy - 6, 30, learned ? 1.5 : 0,
+      var ccy = cellY + cellH * 0.4;
+      var gs = Math.min(38, cellH * 0.58);
+      Glyphs.drawById(ctx, ch.glyph, ccx, ccy, gs, learned ? 1.5 : 0,
         learned ? C.ink : 'rgba(58,45,30,0.16)', true);
-      text(learned ? ch.kai : '·', ccx, ccy + 16, 9,
+      text(learned ? ch.kai : '·', ccx, cellY + cellH * 0.8, 9,
         learned ? C.inkSoft : 'rgba(58,45,30,0.3)', 'center', 'middle');
 
       ui.libraryCells.push({ x: cellX, y: cellY, w: cw, h: cellH, id: ch.id });
@@ -3313,7 +3353,7 @@
       text(ch.pinyin, dcx + 26, dy + 130, 12, C.inkSoft, 'left', 'middle');
       text(ch.meaning, dcx, dy + 158, 11, C.inkSoft, 'center', 'middle');
 
-      ui.evoBtn = { x: dcx + 44, y: dy + 120, w: 70, h: 26 };
+      ui.evoBtn = { x: dcx + 54, y: dy + 120, w: 70, h: 26 };
       drawButton(ui.evoBtn, '看演变', { ink: true, size: 10, play: true });
 
       var ky = dy + 182;
@@ -3373,8 +3413,13 @@
 
     var w = Math.min(layout.contentW, 400);
     var x = (viewW - w) / 2;
-    var y = safeTop + 10;
-    var h = viewH - y - 12;
+    var rows = Math.ceil(Data.CHARS.length / 6);
+    var cellH = Math.min(66, Math.max(40, (viewH - 168) / rows));
+    var charsH = 92 + rows * cellH + 44;
+    var y = state.libraryTab === 'chars'
+      ? Math.max(safeTop + 10, (viewH - charsH) / 2)
+      : safeTop + 10;
+    var h = state.libraryTab === 'chars' ? charsH : viewH - y - 12;
     drawCard(x, y, w, h);
 
     text('字库', x + 20, y + 30, 18, C.ink, 'left', 'middle', 'bold');
@@ -3406,9 +3451,9 @@
       text('识得愈多，史官翻得愈多 · 已启 ' + notesOn + ' / ' + Data.NOTES.length,
         x + w / 2, footY, 10, C.inkFaint, 'center', 'middle');
     } else {
-      drawLibraryGrid(w, x, y);
+      drawLibraryGrid(w, x, y, cellH);
       text('完成一契，其字即收入字库 · 已识 ' + learnedCount + ' / ' + Data.CHARS.length,
-        x + w / 2, y + 402, 10, C.inkFaint, 'center', 'middle');
+        x + w / 2, y + h - 24, 10, C.inkFaint, 'center', 'middle');
     }
 
     if (state.noteSel) drawNoteDetail(noteById(state.noteSel));
@@ -3440,6 +3485,8 @@
     ui.libraryCells = null;
     ui.pick = null;
     ui.levelCells = null;
+    ui.levelPrev = null;
+    ui.levelNext = null;
     ui.levelsClose = null;
     ui.verseCells = null;
     ui.noteCells = null;
@@ -3667,6 +3714,15 @@
 
     if (state.screen === 'levels') {
       if (inRect(x, y, ui.levelsClose)) { goHome(); return; }
+      if (inRect(x, y, ui.levelPrev)) {
+        if (state.levelPage > 0) state.levelPage--;
+        return;
+      }
+      if (inRect(x, y, ui.levelNext)) {
+        var lp = Math.ceil(LEVEL_COUNT / 10);
+        if (state.levelPage < lp - 1) state.levelPage++;
+        return;
+      }
       var lcs = ui.levelCells || [];
       for (var li = 0; li < lcs.length; li++) {
         if (inRect(x, y, lcs[li])) {

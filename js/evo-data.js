@@ -30,7 +30,22 @@
     good: 'bs',
     wade: 'b',
     pick: 'bs',
-    prison: 's'
+    prison: 's',
+    star: 'bs',
+    wind: 's',
+    thunder: 'bs',
+    spring: 'bs',
+    valley: 'bs',
+    hill: 'bs',
+    horse: 'bs',
+    dog: 'bs',
+    pig: 'bs',
+    ear: 'bs',
+    heart: 'bs',
+    head: 'bs',
+    boat: 'bs',
+    bow: 'bs',
+    cart: 'bs'
   };
   if (typeof module === 'object' && module.exports) module.exports = EVO;
   if (root) root.OracleEvo = EVO;
