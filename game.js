@@ -262,6 +262,7 @@
 
   var ui = {
     restart: null,
+    exit: null,
     primary: null,
     secondary: null,
     share: null,
@@ -1251,9 +1252,21 @@
       ctx.stroke();
       text('重开', rx + rw / 2, ry + rh / 2 + 0.5, 11.5, C.inkSoft, 'center', 'middle');
       ui.restart = { x: rx - 6, y: ry - 6, w: rw + 12, h: rh + 12 };
+
+      var ew = 44;
+      var ex = mx - ew - 8;
+      rr(ex, ry, ew, rh, 12);
+      ctx.fillStyle = 'rgba(255,250,238,0.5)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(140,106,63,0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      text('退出', ex + ew / 2, ry + rh / 2 + 0.5, 11.5, C.inkSoft, 'center', 'middle');
+      ui.exit = { x: ex - 4, y: ry - 4, w: ew + 8, h: rh + 8 };
     } else {
       ui.restart = null;
       ui.sound = null;
+      ui.exit = null;
     }
   }
 
@@ -3304,7 +3317,7 @@
       inRect(x, y, ui.quick) || inRect(x, y, ui.evoBtn) ||
       inRect(x, y, ui.evo) ||
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
-      inRect(x, y, ui.startEvo);
+      inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
@@ -3435,6 +3448,8 @@
       }
       return;
     }
+
+    if (inRect(x, y, ui.exit)) { goHome(); return; }
 
     if (inRect(x, y, ui.restart)) {
       if (state.quick) startQuick();
