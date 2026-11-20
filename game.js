@@ -213,6 +213,7 @@
 
   var state = {
     screen: 'start',
+    startSel: Math.min(progress.unlocked - 1, LEVEL_COUNT - 1),
     libraryTab: 'chars',
     librarySel: null,
     noteSel: null,
@@ -264,6 +265,8 @@
     fontPill: null,
     hint: null,
     cardSrc: null,
+    prev: null,
+    next: null,
     optA: null,
     optB: null,
     library: null,
@@ -554,6 +557,7 @@
 
   function goHome() {
     state.screen = 'start';
+    state.startSel = Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
     leaveQuick();
     state.quiz = null;
     state.result = null;
@@ -1900,6 +1904,29 @@
 
   /* ---------------- 弹层：开始 ---------------- */
 
+  /* 首页切契：只允许在已开范围内换，越界不动 */
+  function selectStartLevel(i) {
+    var max = Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+    var n = Math.max(0, Math.min(max, i));
+    if (n === state.startSel) return;
+    state.startSel = n;
+    Sfx.play('select');
+  }
+
+  function drawChevron(cx, cy, dir, on) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx - dir * 3, cy - 5);
+    ctx.lineTo(cx + dir * 3, cy);
+    ctx.lineTo(cx - dir * 3, cy + 5);
+    ctx.strokeStyle = on ? 'rgba(168,58,42,0.72)' : 'rgba(140,106,63,0.16)';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.restore();
+  }
+
   /* 首页贴边卡片：左右各 12，上下各 16，长屏最多 820 高 */
   function startCardRect() {
     var w = layout.contentW;
@@ -1921,6 +1948,11 @@
     /* 多出来的高度摊进四处间距（字变 / 已识 / 主按钮 / 十契），字号不动 */
     var g = Math.max(0, Math.min(84, (h - 468) / 4));
 
+    /* 首页可选的契：只在已开的范围内左右滑/点箭头切换 */
+    var maxSel = Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+    var sel = Math.max(0, Math.min(maxSel, state.startSel));
+    state.startSel = sel;
+
     drawCard(x, y, w, h);
     drawOrnament(cx, y + 56);
 
@@ -1939,7 +1971,8 @@
     text('意见', fbx + fbw / 2, fby + fbh / 2 + 0.5, 11, C.inkSoft, 'center', 'middle');
     ui.feedback = { x: fbx - 6, y: fby - 6, w: fbw + 12, h: fbh + 12 };
 
-    var demoIdx = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
+    var inviting = !!challenge && !challenge.done;
+    var demoIdx = inviting ? challenge.level : sel;
     var demoCh = Data.char(Data.LEVELS[demoIdx].char);
 
     /* 首屏字变：一进首页就能看见这个字从甲骨走到楷书 */
@@ -1986,7 +2019,6 @@
     text('点开细看', px + pw - 36, py + 43, 8, 'rgba(168,58,42,0.6)', 'center', 'middle');
 
     var learned = progress.learned.length;
-    var inviting = !!challenge && !challenge.done;
     var infoY = y + 206 + g * 1.8;
     var infoLine = fitText('已识 ' + learned + ' / ' + Data.CHARS.length + ' 字 · 已开 ' +
       progress.unlocked + ' / ' + LEVEL_COUNT + ' 契', 11, w - 40);
@@ -2003,12 +2035,12 @@
       text(infoLine, cx, infoY, 11.5, C.gold, 'center', 'middle', 'bold');
     }
 
-    var nextIndex = inviting ? challenge.level : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
-    var allDone = progress.unlocked >= LEVEL_COUNT;
+    var nextIndex = inviting ? challenge.level : sel;
+    var selDone = progress.learned.indexOf(Data.char(Data.LEVELS[sel].char).id) >= 0;
     var primaryY = y + 228 + g * 2.1;
     ui.primary = { x: x + 20, y: primaryY, w: w - 40, h: 50 };
     if (inviting) drawButton(ui.primary, '接受挑战 · ' + Data.LEVELS[nextIndex].title, { size: 15 });
-    else if (allDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
+    else if (selDone) drawButton(ui.primary, '重玩「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
     else drawButton(ui.primary, '继续「' + Data.LEVELS[nextIndex].title + '」', { size: 15 });
 
     /* 副按钮宽按卡片内宽均分，320 窄屏也不会探出卡片 */
@@ -2036,22 +2068,36 @@
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    text('十契', x + 20, dotsY, 10.5, 'rgba(90,74,52,0.55)', 'left', 'middle');
+    /* 契名两侧的小箭头：可点，也可整屏左右滑；只到已开的最后一契为止 */
+    drawChevron(x + 26, dotsY, -1, sel > 0);
+    text(Data.LEVELS[sel].title, x + 36, dotsY, 10.5,
+      'rgba(58,45,30,0.62)', 'left', 'middle', 'bold');
+    drawChevron(x + 94, dotsY, 1, sel < maxSel);
+    ui.prev = { x: x + 4, y: dotsY - 22, w: 44, h: 44 };
+    ui.next = { x: x + 72, y: dotsY - 22, w: 44, h: 44 };
+
     var dotR = 4.5;
     var dotGap = Math.min(14, (w - 40 - 48 - dotR * 2) / 9);
     var dotRight = x + w - 20 - dotR;
     for (var k = 0; k < LEVEL_COUNT; k++) {
       var kch = Data.char(Data.LEVELS[k].char);
       var kdone = progress.learned.indexOf(kch.id) >= 0;
-      var kcur = k === progress.unlocked - 1;
+      var kx = dotRight - (LEVEL_COUNT - 1 - k) * dotGap;
       ctx.beginPath();
-      ctx.arc(dotRight - (LEVEL_COUNT - 1 - k) * dotGap, dotsY, dotR, 0, Math.PI * 2);
+      ctx.arc(kx, dotsY, dotR, 0, Math.PI * 2);
       if (kdone) {
         ctx.fillStyle = C.red;
         ctx.fill();
       } else {
-        ctx.strokeStyle = kcur ? C.red : 'rgba(140,106,63,0.3)';
-        ctx.lineWidth = kcur ? 1.6 : 1.2;
+        ctx.strokeStyle = 'rgba(140,106,63,0.3)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+      if (k === sel) {
+        ctx.beginPath();
+        ctx.arc(kx, dotsY, dotR + 2.2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(168,58,42,0.8)';
+        ctx.lineWidth = 1.4;
         ctx.stroke();
       }
     }
@@ -3381,6 +3427,8 @@
     ui.fontPill = null;
     ui.hint = null;
     ui.cardSrc = null;
+    ui.prev = null;
+    ui.next = null;
     ui.optA = null;
     ui.optB = null;
     ui.library = null;
@@ -3467,7 +3515,7 @@
   function onDown(x, y) {
     Sfx.unlock();
     if (state.screen !== 'play') {
-      pointer = { x: x, y: y, idx: -1, moved: true };
+      pointer = { x: x, y: y, idx: -1, moved: true, swipe: state.screen === 'start' };
       return;
     }
     if (state.phase !== 'idle') {
@@ -3527,6 +3575,15 @@
       return;
     }
 
+    /* 首页左右滑切契：位移够大且明显偏水平才认，避免点按钮时误触 */
+    if (state.screen === 'start' && p.swipe && !state.evo && !state.posterCanvas) {
+      var sdx = x - p.x, sdy = y - p.y;
+      if (Math.abs(sdx) >= 40 && Math.abs(sdx) > Math.abs(sdy) * 1.2) {
+        selectStartLevel(state.startSel + (sdx < 0 ? 1 : -1));
+        return;
+      }
+    }
+
     if (inRect(x, y, ui.sound)) { Sfx.toggle(); Sfx.play('tap'); return; }
 
     var onButton = inRect(x, y, ui.primary) || inRect(x, y, ui.secondary) ||
@@ -3538,14 +3595,16 @@
       inRect(x, y, ui.pick) || inRect(x, y, ui.levelsClose) ||
       inRect(x, y, ui.startEvo) || inRect(x, y, ui.exit) ||
       inRect(x, y, ui.fontPill) || inRect(x, y, ui.feedback) ||
+      inRect(x, y, ui.prev) || inRect(x, y, ui.next) ||
       inRect(x, y, ui.hint) || inRect(x, y, ui.cardSrc);
     if (onButton) Sfx.play('tap');
 
     if (state.screen === 'start') {
+      if (inRect(x, y, ui.prev)) { selectStartLevel(state.startSel - 1); return; }
+      if (inRect(x, y, ui.next)) { selectStartLevel(state.startSel + 1); return; }
       if (inRect(x, y, ui.feedback)) { openFeedback(); return; }
       if (inRect(x, y, ui.startEvo)) {
-        var si = Math.min(Math.max(0, progress.unlocked - 1), LEVEL_COUNT - 1);
-        openEvolution(Data.char(Data.LEVELS[si].char));
+        openEvolution(Data.char(Data.LEVELS[state.startSel].char));
         return;
       }
       if (inRect(x, y, ui.fontPill)) {
@@ -3560,7 +3619,7 @@
       if (inRect(x, y, ui.quick)) { startQuick(); return; }
       if (inRect(x, y, ui.primary)) {
         var invited = challenge && !challenge.done ? challenge.level : -1;
-        var idx = invited >= 0 ? invited : Math.min(progress.unlocked - 1, LEVEL_COUNT - 1);
+        var idx = invited >= 0 ? invited : state.startSel;
         leaveQuick();
         startLevel(idx);
       }
